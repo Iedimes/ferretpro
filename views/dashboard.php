@@ -120,8 +120,8 @@ $content .= '
                                 <td>' . Format::datetime($sale['created_at']) . '</td>
                                 <td>' . ($sale['client_name'] ?? 'Mostrador') . '</td>
                                 <td>' . Format::money($sale['total']) . '</td>
-                                <td><span class="badge bg-' . ($sale['type'] === 'contado' ? 'success' : 'warning') . '">' . $sale['type'] . '</span></td>
-                                <td><span class="badge bg-' . ($sale['status'] === 'pagada' ? 'success' : 'danger') . '">' . $sale['status'] . '</span></td>
+                                <td><span class="badge bg-' . ($sale['type'] === 'contado' ? 'info' : 'primary') . '">' . $sale['type'] . '</span></td>
+                                <td><span class="badge bg-' . (($sale['status'] === 'pagada' || $sale['status'] === 'completada') ? 'success' : 'warning') . '">' . $sale['status'] . '</span></td>
                             </tr>';
                         }
                     }

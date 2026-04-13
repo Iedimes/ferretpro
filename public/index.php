@@ -400,7 +400,7 @@ switch ($page) {
                 $total = $subtotal - $discountAmount;
                 
                 // Crear venta
-                $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'completada', datetime('now'))");
+                $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pagada', datetime('now'))");
                 $stmt->execute([$userId, $clientId ?: null, $saleType, $paymentMethod, $subtotal, $discountAmount, $total, $deliveryType]);
                 $saleId = db()->lastInsertId();
                 
