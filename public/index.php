@@ -2,7 +2,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-define('BASE_URL', '/ferre/ferrepro/public');
+define('BASE_URL', '/ferretpro/public');
 
 require_once dirname(__DIR__) . '/class/Database.php';
 require_once dirname(__DIR__) . '/class/Auth.php';
