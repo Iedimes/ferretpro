@@ -1,0 +1,12 @@
+<?php
+// Ignorar la base de datos SQLite
+*.db
+*.sqlite
+
+// Ignorar archivos del sistema
+.DS_Store
+Thumbs.db
+
+// Ignorar configuraciones locales
+.env
+.env.local
