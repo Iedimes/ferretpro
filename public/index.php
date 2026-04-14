@@ -246,8 +246,8 @@ switch ($page) {
         }
         if (isset($_GET['action']) && $_GET['action'] === 'print' && isset($_GET['id'])) {
             $print_sale_id = intval($_GET['id']);
-            view('invoice/print', ['print_sale_id' => $print_sale_id]);
-            break;
+            include dirname(__DIR__) . '/views/invoice/print.php';
+            exit;
         }
         $sales = db()->query("SELECT s.*, u.name as user_name, c.name as client_name FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.id DESC LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
         view('sales/index', compact('sales'));

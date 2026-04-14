@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__) . '/class/Database.php';
+
 $title = 'Factura';
 $pageTitle = 'Imprimir Factura';
 
