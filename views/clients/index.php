@@ -154,20 +154,21 @@ $content .= '
                     <th>Teléfono</th>
                     <th>Categoría</th>
                     <th>Límite Crédito</th>
-                    <th>Saldo</th>
+                    <th>Saldo Disponible</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>';
 foreach ($clients as $c) {
-    $balanceClass = $c['balance'] > 0 ? 'text-danger fw-bold' : '';
+    $availableCredit = $c['credit_limit'] - $c['balance'];
+    $balanceClass = $availableCredit < 0 ? 'text-danger fw-bold' : 'text-success fw-bold';
     $content .= '<tr>
         <td>' . htmlspecialchars($c['name']) . '</td>
         <td>' . $c['document_type'] . ' ' . htmlspecialchars($c['document']) . '</td>
         <td>' . htmlspecialchars($c['phone']) . '</td>
         <td><span class="badge bg-secondary">' . $c['category'] . '</span></td>
         <td>' . Format::money($c['credit_limit']) . '</td>
-        <td class="' . $balanceClass . '">' . Format::money($c['balance']) . '</td>
+        <td class="' . $balanceClass . '">' . Format::money($availableCredit) . '</td>
         <td>
             <a href="?page=clients&action=edit&id=' . $c['id'] . '" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
             <a href="?page=clients&action=delete&id=' . $c['id'] . '" class="btn btn-sm btn-outline-danger" onclick="return confirm(\'¿Eliminar?\')"><i class="bi bi-trash"></i></a>
