@@ -179,8 +179,6 @@ $totalEnLetras = numberToText($sale['total']);
             border: 1px solid #333; 
             padding: 3px; 
         }
-        .items-table th:first-child { border-left: 1px solid #333; }
-        .items-table th:last-child { border-right: 1px solid #333; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
@@ -203,16 +201,13 @@ $totalEnLetras = numberToText($sale['total']);
         }
         .iva-box td { padding: 3px; }
         
-        .footer { 
-            margin-top: 10px; 
-            font-size: 9px; 
-            text-align: center;
-        }
         .footer-box { 
             border: 1px solid #333; 
-            padding: 3px;
+            margin-top: 5px;
             font-size: 9px;
+            width: 100%;
         }
+        .footer-box td { padding: 2px 5px; }
         
 .checkbox {
             display: inline-block;
@@ -358,38 +353,37 @@ $totalEnLetras = numberToText($sale['total']);
             
             <table class="totals">
                 <tr>
-                    <td width="70%"><strong>SUB TOTAL:</strong></td>
-                    <td width="30%" class="text-right"><?php echo number_format($sale['subtotal'], 0, ',', '.'); ?></td>
+                    <td colspan="5"><strong>SUB TOTAL:</strong></td>
+                    <td class="text-right"><?php echo number_format($sale['subtotal'], 0, ',', '.'); ?></td>
                 </tr>
                 <?php if ($sale['discount'] > 0): ?>
                 <tr>
-                    <td>DESCUENTO:</td>
+                    <td colspan="5">DESCUENTO:</td>
                     <td class="text-right">-<?php echo number_format($sale['discount'], 0, ',', '.'); ?></td>
                 </tr>
                 <?php endif; ?>
                 <tr>
-                    <td><strong>TOTAL A PAGAR: <?php echo $totalEnLetras; ?></strong></td>
+                    <td colspan="5"><strong>TOTAL A PAGAR: <?php echo $totalEnLetras; ?></strong></td>
                     <td class="text-right"><strong><?php echo number_format($sale['total'], 0, ',', '.'); ?></strong></td>
                 </tr>
             </table>
             
             <table class="iva-box">
                 <tr>
-                    <td width="33%"><strong>LIQUIDACIÓN DEL IVA (5%):</strong> <?php echo number_format($totalIva5, 0, ',', '.'); ?></td>
-                    <td width="33%"><strong>(10%):</strong> <?php echo number_format($totalIva10, 0, ',', '.'); ?></td>
-                    <td width="34%"><strong>TOTAL IVA:</strong> <?php echo number_format($totalIva5 + $totalIva10, 0, ',', '.'); ?></td>
+                    <td width="30%"><strong>LIQUIDACIÓN DEL IVA (5%):</strong> <?php echo number_format($totalIva5, 0, ',', '.'); ?></td>
+                    <td width="40%" style="text-align: center;"><strong>(10%):</strong> <?php echo number_format($totalIva10, 0, ',', '.'); ?></td>
+                    <td width="30%" style="text-align: right;"><strong>TOTAL IVA:</strong> <?php echo number_format($totalIva5 + $totalIva10, 0, ',', '.'); ?></td>
                 </tr>
             </table>
             
-            <div class="footer">
-                <div class="footer-box">
-                    <strong>Gracias por su preferencia</strong><br>
-                    <?php echo htmlspecialchars($companyName); ?> - RUC: <?php echo htmlspecialchars($companyDocument); ?>
-                </div>
-                <div style="margin-top: 3px;">
-                    ORIGINAL: Cliente | DUPLICADO: Archivo Tributario
-                </div>
-            </div>
+            <table class="footer-box">
+                <tr>
+                    <td style="text-align: center;">ORIGINAL: Cliente</td>
+                </tr>
+                <tr>
+                    <td style="text-align: center;">DUPLICADO: Archivo Tributario</td>
+                </tr>
+            </table>
         </div>
     </div>
 </body>
