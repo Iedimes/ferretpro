@@ -37,14 +37,18 @@ $content = '
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label">Punto de Venta</label>
-                    <input type="text" name="invoice_pos" class="form-control" placeholder="001" value="' . htmlspecialchars($settings['invoice_pos'] ?? '001') . '">
-                    <small class="text-muted">Formato: 001 para punto de venta</small>
+                    <label class="form-label">Establecimiento (Sucursal)</label>
+                    <input type="text" name="invoice_establishment" class="form-control" placeholder="001" value="' . htmlspecialchars($settings['invoice_establishment'] ?? '001') . '">
+                    <small class="text-muted">001 = Casa Matriz, 002 = Sucursal 2, etc.</small>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Prefijo Factura</label>
-                    <input type="text" name="invoice_prefix" class="form-control" placeholder="001-001-" value="' . htmlspecialchars($settings['invoice_prefix'] ?? '001-001-') . '">
-                    <small class="text-muted">Formato Paraguay: 001-001- (punto-número)</small>
+                    <label class="form-label">Punto de Expedición (Caja)</label>
+                    <input type="text" name="invoice_pos" class="form-control" placeholder="001" value="' . htmlspecialchars($settings['invoice_pos'] ?? '001') . '">
+                    <small class="text-muted">001 = Caja 1, 002 = Caja 2, etc.</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Actividad Económica</label>
+                    <input type="text" name="company_activity" class="form-control" placeholder="COMERCIO AL POR MENOR..." value="' . htmlspecialchars($settings['company_activity'] ?? '') . '">
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Alerta de Stock Bajo</label>

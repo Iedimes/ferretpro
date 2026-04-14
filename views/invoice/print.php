@@ -33,19 +33,27 @@ foreach ($settingsRows as $row) {
     $settings[$row['key']] = $row['value'];
 }
 
-$companyName = $settings['company_name'] ?? 'Ferretería';
+$companyName = $settings['company_name'] ?? 'Ferretería FerrePro';
 $companyPhone = $settings['company_phone'] ?? '';
 $companyEmail = $settings['company_email'] ?? '';
 $companyDocument = $settings['company_document'] ?? '';
-$invoicePrefix = $settings['invoice_prefix'] ?? '001-001-';
-$invoicePos = $settings['invoice_pos'] ?? '001';
+$companyAddress = $settings['company_address'] ?? '';
+$companyActivity = $settings['company_activity'] ?? 'COMERCIO AL POR MENOR DE FERRETERÍA Y MATERIALES DE CONSTRUCCIÓN';
+
+$establishment = str_pad($settings['invoice_establishment'] ?? '001', 3, '0', STR_PAD_LEFT);
+$pos = str_pad($settings['invoice_pos'] ?? '001', 3, '0', STR_PAD_LEFT);
+$invoiceNumber = $establishment . '-' . $pos . '-N° ' . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
 
 $saleTypeLabel = $sale['type'] === 'contado' ? 'X' : '';
 $saleTypeCredito = $sale['type'] === 'credito' ? 'X' : '';
 $paymentMethodLabel = ucfirst($sale['payment_method']);
 $deliveryTypeLabel = $sale['delivery_type'] === 'mostrador' ? 'Mostrador' : ($sale['delivery_type'] === 'delivery' ? 'Delivery' : 'Pendiente');
 
-$invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
+$day = date('d', strtotime($sale['created_at']));
+$month = date('m', strtotime($sale['created_at']));
+$year = date('Y', strtotime($sale['created_at']));
+$months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+$monthName = $months[intval($month)];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -58,40 +66,54 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
         
         .invoice { width: 180mm; margin: 0 auto; padding: 5mm; }
         
-        .header { text-align: center; margin-bottom: 10px; }
-        .company-name { font-size: 14px; font-weight: bold; }
-        .company-activity { font-size: 9px; margin-top: 2px; }
-        .company-address { font-size: 9px; margin-top: 2px; }
-        .company-contact { font-size: 9px; margin-top: 2px; }
+.main-box { border: 2px solid #333; padding: 3mm; }
         
-        .invoice-box { border: 2px solid #333; padding: 3mm; }
-        .invoice-title { 
-            font-size: 16px; 
+        .header-table { width: 100%; border-collapse: collapse; }
+        .header-table td { vertical-align: top; }
+        .header-separator { width: 2%; }
+        
+.company-box { 
+            border: 1px solid #333; 
+            padding: 5px; 
+            min-height: 80px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .invoice-box { 
+            border: 1px solid #333; 
+            padding: 5px; 
+            text-align: center;
+            min-height: 80px;
+            width: 100%;
+        }
+        
+        .company-info { font-size: 13px; font-weight: bold; text-align: center; }
+        .company-activity { font-size: 8px; margin-top: 2px; text-align: center; }
+        .company-address { font-size: 9px; margin-top: 2px; text-align: center; }
+        .company-contact { font-size: 9px; margin-top: 2px; text-align: center; }
+        
+        .invoice-title-box { 
+            font-size: 14px; 
+            font-weight: bold; 
+            margin: 5px 0;
+        }
+        
+        .invoice-number { 
+            font-size: 12px; 
             font-weight: bold; 
             text-align: center;
-            margin-bottom: 5px;
         }
-        .timbrado { 
-            font-size: 9px; 
-            text-align: right;
-            margin-bottom: 5px;
-        }
-        
-        .date-conditions { 
-            display: table; 
-            width: 100%; 
-            border: 1px solid #333;
-            margin-bottom: 5px;
-            font-size: 10px;
-        }
-        .date-conditions td { padding: 3px; }
         
         .client-box { 
             border: 1px solid #333; 
             margin-bottom: 5px;
             font-size: 10px;
+            width: 100%;
         }
-        .client-box td { padding: 3px; }
+        .client-box td { padding: 2px 5px; }
+        .client-box .label-left { text-align: left; }
+        .client-box .text-right { text-align: right; }
         
         .items-table { 
             width: 100%; 
@@ -124,6 +146,7 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
             border: 1px solid #333; 
             margin-top: 5px;
             font-size: 10px;
+            width: 100%;
         }
         .iva-box td { padding: 3px; }
         
@@ -138,7 +161,7 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
             font-size: 9px;
         }
         
-        .checkbox {
+.checkbox {
             display: inline-block;
             width: 12px;
             height: 12px;
@@ -147,6 +170,12 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
             text-align: center;
             line-height: 12px;
             font-size: 10px;
+        }
+        
+        .timbrado-box {
+            border: 1px solid #333;
+            padding: 3px;
+            font-size: 8px;
         }
         
         @media print {
@@ -168,50 +197,59 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
     </div>
     
     <div class="invoice">
-        <div class="header">
-            <div class="company-name"><?php echo htmlspecialchars($companyName); ?></div>
-            <div class="company-activity">INSTALACIÓN DE CALEFACCIÓN Y AIRE ACONDICIONADO | MANTENIMIENTO Y REPARACIÓN DE EQUIPOS ELÉCTRICOS</div>
-            <div class="company-address"><?php echo htmlspecialchars($settings['company_address'] ?? 'Asunción'); ?></div>
-            <div class="company-contact">
-                <?php if ($companyEmail): ?><?php echo htmlspecialchars($companyEmail); ?><?php endif; ?>
-                <?php if ($companyPhone): ?> | Tel: <?php echo htmlspecialchars($companyPhone); ?><?php endif; ?>
-            </div>
-        </div>
-        
-        <div class="invoice-box">
-            <div class="invoice-title">FACTURA</div>
-            <div class="timbrado">
-                TIMBRADO Nº: <?php echo htmlspecialchars($settings['timbrado_num'] ?? '18672488'); ?><br>
-                Vigencia: <?php echo htmlspecialchars($settings['timbrado_inicio'] ?? '24/02/2026'); ?> al <?php echo htmlspecialchars($settings['timbrado_fin'] ?? '28/02/2027'); ?><br>
-                RUC: <?php echo htmlspecialchars($companyDocument); ?><br>
-                <?php echo $invoiceNumber; ?>
-            </div>
-            
-            <table class="date-conditions">
+        <div class="main-box">
+            <table class="header-table">
                 <tr>
-                    <td width="50%">Asunción, <?php echo date('d', strtotime($sale['created_at'])); ?> de <?php echo date('m', strtotime($sale['created_at'])); ?> de <?php echo date('Y', strtotime($sale['created_at'])); ?></td>
-                    <td width="50%">
+                    <td class="header-left" width="60%">
+                        <div class="company-box">
+                            <div class="company-info"><?php echo htmlspecialchars($companyName); ?></div>
+                            <div style="height: 15px;"></div>
+                            <div class="company-activity"><?php echo htmlspecialchars($companyActivity); ?></div>
+                            <div style="height: 10px;"></div>
+                            <div class="company-address"><?php echo htmlspecialchars($companyAddress); ?></div>
+                            <div style="height: 5px;"></div>
+                            <div class="company-contact">
+                                <?php if ($companyEmail): ?><?php echo htmlspecialchars($companyEmail); ?><?php endif; ?>
+                                <?php if ($companyPhone): ?> | Tel: <?php echo htmlspecialchars($companyPhone); ?><?php endif; ?>
+                            </div>
+                            <div style="height: 20px;"></div>
+                        </div>
+                    </td>
+                    <td class="header-separator" width="2%"></td>
+                    <td class="header-right" width="38%">
+                        <div class="invoice-box">
+                            <div class="timbrado-line">TIMBRADO: <?php echo htmlspecialchars($settings['timbrado_num'] ?? '18672488'); ?></div>
+                            <div class="timbrado-line">Inicio: <?php echo htmlspecialchars($settings['timbrado_inicio'] ?? '24/02/2026'); ?> | Vigencia: <?php echo htmlspecialchars($settings['timbrado_fin'] ?? '28/02/2027'); ?></div>
+                            <div class="timbrado-line">RUC: <?php echo htmlspecialchars($companyDocument); ?></div>
+                            <div class="invoice-title-box">FACTURA</div>
+                            <div class="invoice-number"><?php echo $invoiceNumber; ?></div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="height: 8px;"></div>
+            
+            <table class="client-box">
+                <tr>
+                    <td width="50%">Asunción, <?php echo $day; ?> de <?php echo $monthName; ?> de <?php echo $year; ?></td>
+                    <td width="50%" style="text-align: right;">
                         Condición de Venta: 
                         <span class="checkbox"><?php echo $saleTypeLabel; ?></span> CONTADO
                         <span class="checkbox"><?php echo $saleTypeCredito; ?></span> CRÉDITO
                     </td>
                 </tr>
-            </table>
-            
-            <table class="client-box">
                 <tr>
-                    <td width="20%">C.I. Nº / R.U.C.:</td>
-                    <td width="30%"><?php echo htmlspecialchars($sale['client_document'] ?? ''); ?></td>
-                    <td width="20%">Teléfono:</td>
-                    <td width="30%"><?php echo htmlspecialchars($sale['client_phone'] ?? ''); ?></td>
+                    <td width="50%" class="label-left">C.I. Nº / R.U.C.: <?php echo htmlspecialchars($sale['client_document'] ?? ''); ?></td>
+                    <td width="50%" class="text-right">Teléfono: <?php echo htmlspecialchars($sale['client_phone'] ?? ''); ?></td>
                 </tr>
                 <tr>
-                    <td>Nombre o Razón Social:</td>
-                    <td colspan="3"><?php echo htmlspecialchars($sale['client_name'] ?? 'MOSTRADOR'); ?></td>
+                    <td width="50%" class="label-left">Nombre o Razón Social: <?php echo htmlspecialchars($sale['client_name'] ?? 'MOSTRADOR'); ?></td>
+                    <td width="50%" class="text-right">Nota de Remisión Nº:</td>
                 </tr>
                 <tr>
-                    <td>Dirección:</td>
-                    <td colspan="3"><?php echo htmlspecialchars($sale['client_address'] ?? ''); ?></td>
+                    <td width="50%" class="label-left">Dirección: <?php echo htmlspecialchars($sale['client_address'] ?? ''); ?></td>
+                    <td width="50%" class="text-right"></td>
                 </tr>
             </table>
             
@@ -241,7 +279,6 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
                         $iva = intval($item['product_iva'] ?? $item['iva'] ?? 10);
                         $subtotal = floatval($item['subtotal']);
                         
-                        // Calcular base y IVA
                         if ($iva == 10) {
                             $base = $subtotal / 1.10;
                             $ivaAmount = $subtotal - $base;
@@ -288,12 +325,9 @@ $invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
             
             <table class="iva-box">
                 <tr>
-                    <td colspan="2"><strong>LIQUIDACIÓN DEL IVA</strong></td>
-                </tr>
-                <tr>
-                    <td width="33%">(5%): <?php echo number_format($totalIva5, 0, ',', '.'); ?></td>
-                    <td width="33%">(10%): <?php echo number_format($totalIva10, 0, ',', '.'); ?></td>
-                    <td width="34%">TOTAL IVA: <?php echo number_format($totalIva5 + $totalIva10, 0, ',', '.'); ?></td>
+                    <td width="33%"><strong>LIQUIDACIÓN DEL IVA (5%):</strong> <?php echo number_format($totalIva5, 0, ',', '.'); ?></td>
+                    <td width="33%"><strong>(10%):</strong> <?php echo number_format($totalIva10, 0, ',', '.'); ?></td>
+                    <td width="34%"><strong>TOTAL IVA:</strong> <?php echo number_format($totalIva5 + $totalIva10, 0, ',', '.'); ?></td>
                 </tr>
             </table>
             
