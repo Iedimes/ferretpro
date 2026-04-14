@@ -399,9 +399,12 @@ switch ($page) {
                 $discountAmount = $subtotal * ($discount / 100);
                 $total = $subtotal - $discountAmount;
                 
+                // Determinar status según tipo de venta
+                $saleStatus = ($saleType === 'contado') ? 'pagada' : 'pendiente';
+                
                 // Crear venta
-                $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pagada', datetime('now'))");
-                $stmt->execute([$userId, $clientId ?: null, $saleType, $paymentMethod, $subtotal, $discountAmount, $total, $deliveryType]);
+                $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+                $stmt->execute([$userId, $clientId ?: null, $saleType, $paymentMethod, $subtotal, $discountAmount, $total, $deliveryType, $saleStatus]);
                 $saleId = db()->lastInsertId();
                 
                 // Agregar items a la venta

@@ -62,7 +62,7 @@ if (empty($sales)) {
     foreach ($sales as $s) {
         // Determinar estado combinado: Tipo + Estado de pago
         $saleType = $s['type'];
-        $saleStatus = $s['status'];
+        $saleStatus = $s['status'] ?? ($s['type'] === 'contado' ? 'pagada' : 'pendiente');
         $deliveryType = $s['delivery_type'] ?? 'mostrador';
         
         // Generar etiqueta de estado de venta

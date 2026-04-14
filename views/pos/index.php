@@ -73,9 +73,18 @@ $content .= '</div>
             <div class="card-footer">
                 <div class="mb-2">
                     <label class="form-label">Cliente (opcional)</label>
-                    <select name="client_id" id="clientSelect" class="form-select form-select-sm">
-                        <option value="">Mostrador</option>
-                         ' . implode('', array_map(fn($c) => "<option value=\"{$c['id']}\" data-balance=\"{$c['balance']}\">{$c['name']} " . ($c['balance'] > 0 ? "(Deuda: " . Format::money($c['balance']) . ")" : "") . "</option>", $clients)) . '
+                    <div class="position-relative">
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="clientSearch" class="form-control" placeholder="Buscar por nombre o RUC..." autocomplete="off">
+                            <button type="button" class="btn btn-outline-primary" onclick="window.location.href=\'?page=clients&action=new\'" title="Nuevo cliente">
+                                <i class="bi bi-plus-circle"></i>
+                            </button>
+                        </div>
+                        <div id="clientResults" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></div>
+                    </div>
+                    <select name="client_id" id="clientSelect" class="form-select form-select-sm mt-1" style="display: none;">
+                        <option value="" data-balance="0">Mostrador</option>
+                         ' . implode('', array_map(fn($c) => "<option value=\"{$c['id']}\" data-balance=\"{$c['balance']}\" data-document=\"{$c['document']}\">{$c['name']} - {$c['document']} " . ($c['balance'] > 0 ? "(Deuda: " . Format::money($c['balance']) . ")" : "") . "</option>", $clients)) . '
                     </select>
                 </div>
                 <div class="mb-2">
@@ -396,6 +405,18 @@ function processSale() {
     document.getElementById("saleForm").submit();
 }
 
+// ========== SELECCIÓN DE CLIENTE ==========
+function selectClient(id) {
+    var select = document.getElementById("clientSelect");
+    select.value = id;
+    var selectedOption = select.options[select.selectedIndex];
+    var clientName = selectedOption ? selectedOption.text : "";
+    document.getElementById("clientSearch").value = clientName;
+    document.getElementById("clientSearch").readOnly = true;
+    document.getElementById("clientResults").style.display = "none";
+    select.style.display = "none";
+}
+
 // ========== INICIALIZACIÓN ==========
 document.addEventListener("DOMContentLoaded", function() {
     console.log("✅ DOM LOADED - Inicializando listeners...");
@@ -410,6 +431,52 @@ document.addEventListener("DOMContentLoaded", function() {
             e.preventDefault();
             console.log("👆 Clic en Actualizar");
             loadProductsByCategory();
+        });
+    }
+    
+    // Búsqueda de cliente
+    const clientSearch = document.getElementById("clientSearch");
+    const clientResults = document.getElementById("clientResults");
+    const clientSelect = document.getElementById("clientSelect");
+    if (clientSearch && clientResults && clientSelect) {
+        clientSearch.addEventListener("input", function(e) {
+            var term = this.value.toLowerCase().trim();
+            if (term.length < 1) {
+                clientResults.style.display = "none";
+                return;
+            }
+            
+            var html = "";
+            for (var i = 0; i < clientSelect.options.length; i++) {
+                var option = clientSelect.options[i];
+                var text = option.text.toLowerCase();
+                var doc = (option.getAttribute("data-document") || "").toLowerCase();
+                if (text.indexOf(term) !== -1 || doc.indexOf(term) !== -1) {
+                    var clientId = option.value;
+                    var clientName = option.text;
+                    html += "<a href=\"#\" class=\"list-group-item list-group-item-action py-1\" onclick=\"selectClient(" + clientId + "); return false;\">" + clientName + "</a>";
+                }
+            }
+            
+            if (html) {
+                clientResults.innerHTML = html;
+                clientResults.style.display = "block";
+            } else {
+                clientResults.style.display = "none";
+            }
+        });
+    }
+    
+    // Limpiar cliente al hacer click en el input
+    if (clientSearch) {
+        clientSearch.addEventListener("click", function() {
+            if (this.readOnly) {
+                this.value = "";
+                this.readOnly = false;
+                var select = document.getElementById("clientSelect");
+                select.value = "";
+                select.style.display = "none";
+            }
         });
     }
     
