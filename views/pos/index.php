@@ -83,9 +83,13 @@ $content .= '</div>
                         <div id="clientResults" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></div>
                     </div>
                     <select name="client_id" id="clientSelect" class="form-select form-select-sm mt-1" style="display: none;">
-                        <option value="" data-balance="0">Mostrador</option>
-                         ' . implode('', array_map(fn($c) => "<option value=\"{$c['id']}\" data-balance=\"{$c['balance']}\" data-document=\"{$c['document']}\">{$c['name']} - {$c['document']} " . ($c['balance'] > 0 ? "(Deuda: " . Format::money($c['balance']) . ")" : "") . "</option>", $clients)) . '
+                        <option value="" data-balance="0" data-category="minorista">Mostrador</option>
+                         ' . implode('', array_map(fn($c) => "<option value=\"{$c['id']}\" data-balance=\"{$c['balance']}\" data-document=\"{$c['document']}\" data-category=\"{$c['category']}\">{$c['name']} - {$c['document']} " . ($c['balance'] > 0 ? "(Deuda: " . Format::money($c['balance']) . ")" : "") . "</option>", $clients)) . '
                     </select>
+                    <div class="form-check mt-2">
+                        <input type="checkbox" class="form-check-input" id="wholesaleDiscount" onchange="renderCart()">
+                        <label class="form-check-label" for="wholesaleDiscount">Aplicar descuento mayorista (15%)</label>
+                    </div>
                 </div>
                 <div class="mb-2">
                     <label class="form-label">Tipo de Venta</label>
@@ -148,6 +152,7 @@ $content .= '</div>
     <input type="hidden" name="payment_method" id="salePaymentMethod">
     <input type="hidden" name="discount" id="saleDiscount">
     <input type="hidden" name="delivery_type" id="saleDeliveryType">
+    <input type="hidden" name="wholesale_discount" id="saleWholesaleDiscount">
 </form>
 
 <script>
@@ -217,12 +222,19 @@ function renderCart() {
     }
     
     const discount = parseFloat(document.getElementById("globalDiscount").value) || 0;
+    const wholesaleDiscount = document.getElementById("wholesaleDiscount").checked;
+    const wholesalePct = wholesaleDiscount ? 0.15 : 0;
+    
     let subtotal = 0;
     let totalIVA = 0;
     let html = "<table class=\"table table-sm mb-0\"><tbody>";
     
     posCart.forEach(item => {
-        const itemTotal = item.price * item.qty;
+        let itemPrice = item.price;
+        if (wholesalePct > 0) {
+            itemPrice = itemPrice * (1 - wholesalePct);
+        }
+        const itemTotal = itemPrice * item.qty;
         const itemIVA = item.iva === 10 ? Math.round(itemTotal / 11) : (item.iva === 5 ? Math.round(itemTotal / 21) : 0);
         const itemBase = itemTotal - itemIVA;
         subtotal += itemBase;
@@ -400,6 +412,7 @@ function processSale() {
     document.getElementById("salePaymentMethod").value = document.getElementById("paymentMethod").value;
     document.getElementById("saleDiscount").value = document.getElementById("globalDiscount").value;
     document.getElementById("saleDeliveryType").value = document.getElementById("deliveryType").value;
+    document.getElementById("saleWholesaleDiscount").value = document.getElementById("wholesaleDiscount").checked ? "1" : "0";
     
     console.log("✓ Enviando venta...");
     document.getElementById("saleForm").submit();
@@ -411,10 +424,17 @@ function selectClient(id) {
     select.value = id;
     var selectedOption = select.options[select.selectedIndex];
     var clientName = selectedOption ? selectedOption.text : "";
+    var clientCategory = selectedOption ? selectedOption.getAttribute("data-category") : "minorista";
+    
     document.getElementById("clientSearch").value = clientName;
     document.getElementById("clientSearch").readOnly = true;
     document.getElementById("clientResults").style.display = "none";
     select.style.display = "none";
+    
+    // Auto-check mayorista discount
+    var wholesaleCheck = document.getElementById("wholesaleDiscount");
+    wholesaleCheck.checked = (clientCategory === "mayorista");
+    renderCart();
 }
 
 // ========== INICIALIZACIÓN ==========
