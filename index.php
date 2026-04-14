@@ -57,6 +57,10 @@ if ($uri === '/pos/process' && $method === 'POST') {
     $items = json_decode($_POST['items'] ?? '[]', true);
     $client_id = $_POST['client_id'] ?? null;
     $sale_type = $_POST['sale_type'] ?? 'contado';
+    
+    // DEBUG: Guardar en log qué viene del formulario
+    error_log("DEBUG pos_process: sale_type POST=" . ($_POST['sale_type'] ?? 'NO DEFINIDO') . " client_id=" . $client_id);
+    
     $payment_method = $_POST['payment_method'] ?? 'efectivo';
     $discount = floatval($_POST['discount'] ?? 0);
     $delivery_type = $_POST['delivery_type'] ?? 'mostrador';
@@ -75,6 +79,11 @@ if ($uri === '/pos/process' && $method === 'POST') {
     
     try {
         db()->beginTransaction();
+        
+        // DEBUG EXTRA
+        error_log("=== GUARDANDO VENTA ===");
+        error_log("sale_type a guardar: " . $sale_type);
+        error_log("status calculado: " . ($sale_type === 'credito' ? 'pendiente' : 'pagada'));
         
         $stmt = db()->prepare("INSERT INTO sales (client_id, user_id, type, status, subtotal, discount, total, payment_method, delivery_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $status = $sale_type === 'credito' ? 'pendiente' : 'pagada';

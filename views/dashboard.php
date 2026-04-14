@@ -115,13 +115,24 @@ $content .= '
                         $content .= '<tr><td colspan="6" class="text-center text-muted">No hay ventas registradas</td></tr>';
                     } else {
                         foreach ($recentSales as $sale) {
+                            $typeLabel = $sale['type'] === 'contado' ? 'Contado' : 'Crédito';
+                            $typeClass = $sale['type'] === 'contado' ? 'info' : 'primary';
+                            
+                            if ($sale['type'] === 'contado') {
+                                $statusLabel = 'Pagado';
+                                $statusClass = 'success';
+                            } else {
+                                $statusLabel = $sale['status'] === 'pagada' ? 'Pagado' : 'Pendiente';
+                                $statusClass = $sale['status'] === 'pagada' ? 'success' : 'warning';
+                            }
+                            
                             $content .= '<tr>
                                 <td>' . $sale['id'] . '</td>
                                 <td>' . Format::datetime($sale['created_at']) . '</td>
                                 <td>' . ($sale['client_name'] ?? 'Mostrador') . '</td>
                                 <td>' . Format::money($sale['total']) . '</td>
-                                <td><span class="badge bg-' . ($sale['type'] === 'contado' ? 'info' : 'primary') . '">' . $sale['type'] . '</span></td>
-                                <td><span class="badge bg-' . (($sale['status'] === 'pagada' || $sale['status'] === 'completada') ? 'success' : 'warning') . '">' . $sale['status'] . '</span></td>
+                                <td><span class="badge bg-' . $typeClass . '">' . $typeLabel . '</span></td>
+                                <td><span class="badge bg-' . $statusClass . '">' . $statusLabel . '</span></td>
                             </tr>';
                         }
                     }

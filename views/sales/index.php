@@ -67,14 +67,14 @@ if (empty($sales)) {
         
         // Generar etiqueta de estado de venta
         if ($saleType === 'contado') {
-            $statusLabel = 'Contado Pagado';
+            $statusLabel = 'Contado';
             $statusClass = 'success';
         } else {
             if ($saleStatus === 'pagada') {
-                $statusLabel = 'Credito Pagado';
-                $statusClass = 'info';
+                $statusLabel = 'Crédito Pagado';
+                $statusClass = 'success';
             } else {
-                $statusLabel = 'Credito Pendiente';
+                $statusLabel = 'Crédito Pendiente';
                 $statusClass = 'warning';
             }
         }
