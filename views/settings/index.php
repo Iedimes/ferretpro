@@ -50,6 +50,14 @@ $content = '
                     <label class="form-label">Alerta de Stock Bajo</label>
                     <input type="number" name="low_stock_alert" class="form-control" value="' . htmlspecialchars($settings['low_stock_alert'] ?? '5') . '">
                 </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Factura</label>
+                    <select name="invoice_type" class="form-select">
+                        <option value="letter"' . ($settings['invoice_type'] ?? '' === 'letter' ? 'selected' : '') . '>Carta (A4)</option>
+                        <option value="thermal"' . ($settings['invoice_type'] ?? '' === 'thermal' ? 'selected' : '') . '>Termal (58mm)</option>
+                    </select>
+                </div>
                 <div class="mt-3">
                     <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 </div>

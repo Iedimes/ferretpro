@@ -102,7 +102,8 @@ if (empty($sales)) {
             <td><span class="badge bg-' . $statusClass . '">' . $statusLabel . '</span></td>
             <td>' . $deliveryLabel . '</td>
             <td>
-                <a href="?page=sales&action=edit&id=' . $s['id'] . '" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
+                <a href="?page=sales&action=edit&id=' . $s['id'] . '" class="btn btn-sm btn-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+                <a href="?page=sales&action=print&id=' . $s['id'] . '" class="btn btn-sm btn-secondary" target="_blank" title="Imprimir"><i class="bi bi-printer"></i></a>
                 ' . $deliveryAction . '
             </td>
         </tr>';
