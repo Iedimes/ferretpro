@@ -17,6 +17,7 @@ $content = '
             <option value="clients" ' . ($type === 'clients' ? 'selected' : '') . '>Clientes</option>
             <option value="stock" ' . ($type === 'stock' ? 'selected' : '') . '>Stock</option>
             <option value="earnings" ' . ($type === 'earnings' ? 'selected' : '') . '>Ganancias</option>
+            <option value="receivables" ' . ($type === 'receivables' ? 'selected' : '') . '>Cuentas por Cobrar</option>
         </select>
     </div>
     <div class="col-md-2">
@@ -52,15 +53,27 @@ function updateFields() {
     var dateFromContainer = document.getElementById("dateFromContainer");
     var dateToContainer = document.getElementById("dateToContainer");
     var stockStatusContainer = document.getElementById("stockStatusContainer");
+    var searchLabel = document.querySelector("label[for=\"searchProduct\"]");
+    var searchInput = document.getElementById("searchProduct");
     
     if (type === "stock") {
         dateFromContainer.style.display = "none";
         dateToContainer.style.display = "none";
         stockStatusContainer.style.display = "block";
+        if (searchLabel) searchLabel.textContent = "Buscar";
+        if (searchInput) searchInput.placeholder = "Código o descripción...";
+    } else if (type === "receivables") {
+        dateFromContainer.style.display = "none";
+        dateToContainer.style.display = "none";
+        stockStatusContainer.style.display = "none";
+        if (searchLabel) searchLabel.textContent = "Cliente";
+        if (searchInput) searchInput.placeholder = "Buscar cliente...";
     } else {
         dateFromContainer.style.display = "block";
         dateToContainer.style.display = "block";
         stockStatusContainer.style.display = "none";
+        if (searchLabel) searchLabel.textContent = "Buscar";
+        if (searchInput) searchInput.placeholder = type === "products" ? "Código o descripción..." : "";
     }
 }
 
@@ -379,4 +392,108 @@ if ($type === 'earnings') {
     </div>';
 }
 
+if ($type === 'receivables') {
+    $clientSearch = $_GET['search'] ?? '';
+    
+    $whereClause = "ar.status != 'cancelada'";
+    $params = [];
+    
+    if ($clientSearch) {
+        $whereClause .= " AND c.name LIKE ?";
+        $params[] = "%$clientSearch%";
+    }
+    
+    $receivablesStmt = db()->prepare("
+        SELECT ar.*, c.name as client_name, c.document, c.phone,
+               s.created_at as sale_date
+        FROM accounts_receivable ar
+        JOIN clients c ON ar.client_id = c.id
+        LEFT JOIN sales s ON ar.sale_id = s.id
+        WHERE $whereClause
+        ORDER BY ar.due_date ASC
+    ");
+    $receivablesStmt->execute($params);
+    $receivables = $receivablesStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $totalPending = array_sum(array_map(fn($r) => $r['amount'] - $r['paid_amount'], $receivables));
+    $totalOverdue = 0;
+    $today = date('Y-m-d');
+    foreach ($receivables as $r) {
+        if ($r['due_date'] < $today && $r['status'] === 'pendiente') {
+            $totalOverdue += $r['amount'] - $r['paid_amount'];
+        }
+    }
+    
+    $content .= '
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Pendiente</h6>
+                    <h3>' . Format::money($totalPending) . '</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card danger">
+                <div class="card-body">
+                    <h6 class="text-muted">Vencido</h6>
+                    <h3>' . Format::money($totalOverdue) . '</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card primary">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas</h6>
+                    <h3>' . count($receivables) . '</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Estado de Cuentas por Cliente</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Documento</th>
+                        <th>Venta</th>
+                        <th>Fecha Venta</th>
+                        <th>Monto</th>
+                        <th>Pagado</th>
+                        <th>Pendiente</th>
+                        <th>Vencimiento</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>';
+    foreach ($receivables as $r) {
+        $pending = $r['amount'] - $r['paid_amount'];
+        $isOverdue = $r['due_date'] < $today && $r['status'] === 'pendiente';
+        $statusBadge = $r['status'] === 'cancelada' ? 'bg-success' : ($isOverdue ? 'bg-danger' : 'bg-warning');
+        $statusLabel = $r['status'] === 'cancelada' ? 'Cancelada' : ($isOverdue ? 'Vencido' : 'Pendiente');
+        
+        $content .= '<tr>
+            <td>' . htmlspecialchars($r['client_name']) . '</td>
+            <td>' . htmlspecialchars($r['document']) . '</td>
+            <td>#' . $r['sale_id'] . '</td>
+            <td>' . Format::date($r['sale_date']) . '</td>
+            <td>' . Format::money($r['amount']) . '</td>
+            <td>' . Format::money($r['paid_amount']) . '</td>
+            <td class="fw-bold">' . Format::money($pending) . '</td>
+            <td>' . Format::date($r['due_date']) . '</td>
+            <td><span class="badge ' . $statusBadge . '">' . $statusLabel . '</span></td>
+        </tr>';
+    }
+    $content .= '</tbody>
+            </table>
+        </div>
+    </div>';
+}
 
+?>
