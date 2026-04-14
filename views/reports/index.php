@@ -3,13 +3,13 @@ $title = 'Reportes';
 $pageTitle = 'Reportes y Estadísticas';
 
 $type = $_GET['type'] ?? 'sales';
-
-$dateFrom = $_GET['date_from'] ?? date('Y-m-01');
-$dateTo = $_GET['date_to'] ?? date('Y-m-d');
+$search = $_GET['search'] ?? '';
+$dateFrom = $_GET['date_from'] ?? '';
+$dateTo = $_GET['date_to'] ?? '';
 
 $content = '
 <div class="row mb-4">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label class="form-label">Tipo de Reporte</label>
         <select id="reportType" class="form-select">
             <option value="sales" ' . ($type === 'sales' ? 'selected' : '') . '>Ventas</option>
@@ -19,38 +19,99 @@ $content = '
             <option value="earnings" ' . ($type === 'earnings' ? 'selected' : '') . '>Ganancias</option>
         </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
+        <label class="form-label">Buscar</label>
+        <input type="text" id="searchProduct" class="form-control" placeholder="Código o descripción..." value="' . htmlspecialchars($search) . '">
+    </div>
+    <div class="col-md-2" id="dateFromContainer">
         <label class="form-label">Desde</label>
         <input type="date" id="dateFrom" class="form-control" value="' . $dateFrom . '">
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2" id="dateToContainer">
         <label class="form-label">Hasta</label>
         <input type="date" id="dateTo" class="form-control" value="' . $dateTo . '">
     </div>
-    <div class="col-md-3 d-flex align-items-end">
-        <button type="button" onclick="loadReport()" class="btn btn-primary w-100">Generar</button>
+    <div class="col-md-2" id="stockStatusContainer" style="display: none;">
+        <label class="form-label">Estado Stock</label>
+        <select id="stockStatus" class="form-select">
+            <option value="">Todos</option>
+            <option value="low"' . ($_GET['stock_status'] === 'low' ? 'selected' : '') . '>Bajo</option>
+            <option value="none"' . ($_GET['stock_status'] === 'none' ? 'selected' : '') . '>Sin Stock</option>
+            <option value="over"' . ($_GET['stock_status'] === 'over' ? 'selected' : '') . '>Con Stock</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="button" onclick="loadReport()" class="btn btn-primary me-2">Generar</button>
+        <button type="button" onclick="clearFilters()" class="btn btn-outline-secondary">Todos</button>
     </div>
 </div>
 
 <script>
-function loadReport() {
+function updateFields() {
     var type = document.getElementById("reportType").value;
-    var dateFrom = document.getElementById("dateFrom").value;
-    var dateTo = document.getElementById("dateTo").value;
-    window.location.href = "?page=reports&type=" + type + "&date_from=" + dateFrom + "&date_to=" + dateTo;
+    var dateFromContainer = document.getElementById("dateFromContainer");
+    var dateToContainer = document.getElementById("dateToContainer");
+    var stockStatusContainer = document.getElementById("stockStatusContainer");
+    
+    if (type === "stock") {
+        dateFromContainer.style.display = "none";
+        dateToContainer.style.display = "none";
+        stockStatusContainer.style.display = "block";
+    } else {
+        dateFromContainer.style.display = "block";
+        dateToContainer.style.display = "block";
+        stockStatusContainer.style.display = "none";
+    }
 }
 
-document.getElementById("reportType").addEventListener("change", loadReport);
+function loadReport() {
+    var type = document.getElementById("reportType").value;
+    var search = document.getElementById("searchProduct").value;
+    var dateFrom = document.getElementById("dateFrom").value;
+    var dateTo = document.getElementById("dateTo").value;
+    var stockStatus = document.getElementById("stockStatus") ? document.getElementById("stockStatus").value : "";
+    var url = "?page=reports&type=" + type;
+    if (search) url += "&search=" + encodeURIComponent(search);
+    if (dateFrom) url += "&date_from=" + dateFrom;
+    if (dateTo) url += "&date_to=" + dateTo;
+    if (stockStatus) url += "&stock_status=" + stockStatus;
+    window.location.href = url;
+}
+
+function clearFilters() {
+    document.getElementById("searchProduct").value = "";
+    document.getElementById("dateFrom").value = "";
+    document.getElementById("dateTo").value = "";
+    if (document.getElementById("stockStatus")) document.getElementById("stockStatus").value = "";
+    loadReport();
+}
+
+document.getElementById("reportType").addEventListener("change", function() { updateFields(); loadReport(); });
+document.getElementById("searchProduct").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") loadReport();
+});
+updateFields();
 </script>';
 
 if ($type === 'sales') {
-    $salesData = db()->query("
+    $whereClause = "1=1";
+    $params = [];
+    
+    if ($dateFrom && $dateTo) {
+        $whereClause .= " AND DATE(created_at) BETWEEN ? AND ?";
+        $params[] = $dateFrom;
+        $params[] = $dateTo;
+    }
+    
+    $salesData = db()->prepare("
         SELECT DATE(created_at) as fecha, COUNT(*) as cantidad, SUM(total) as total
         FROM sales
-        WHERE DATE(created_at) BETWEEN '$dateFrom' AND '$dateTo'
+        WHERE $whereClause
         GROUP BY DATE(created_at)
         ORDER BY fecha
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ");
+    $salesData->execute($params);
+    $salesData = $salesData->fetchAll(PDO::FETCH_ASSOC);
     
     $totalVentas = array_sum(array_map(fn($s) => $s['total'], $salesData));
     $totalCantidad = array_sum(array_map(fn($s) => $s['cantidad'], $salesData));
@@ -114,16 +175,34 @@ if ($type === 'sales') {
 }
 
 if ($type === 'products') {
-    $productsData = db()->query("
+    $whereClause = "1=1";
+    $params = [];
+    
+    if ($dateFrom && $dateTo) {
+        $whereClause .= " AND s.created_at BETWEEN ? AND ?";
+        $params[] = $dateFrom;
+        $params[] = $dateTo;
+    }
+    
+    if ($search) {
+        $whereClause .= " AND (p.code LIKE ? OR p.name LIKE ?)";
+        $searchTerm = "%$search%";
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+    }
+    
+    $productsData = db()->prepare("
         SELECT p.id, p.name, p.code, SUM(sd.quantity) as cantidad_vendida, SUM(sd.subtotal) as total_vendido
         FROM sale_details sd
         JOIN products p ON sd.product_id = p.id
         JOIN sales s ON sd.sale_id = s.id
-        WHERE s.created_at BETWEEN '$dateFrom' AND '$dateTo'
+        WHERE $whereClause
         GROUP BY p.id
         ORDER BY total_vendido DESC
-        LIMIT 20
-    ")->fetchAll(PDO::FETCH_ASSOC);
+        LIMIT 50
+    ");
+    $productsData->execute($params);
+    $productsData = $productsData->fetchAll(PDO::FETCH_ASSOC);
     
     $content .= '
     <div class="card">
@@ -156,9 +235,33 @@ if ($type === 'products') {
 }
 
 if ($type === 'stock') {
-    $lowStock = db()->query("SELECT * FROM products WHERE active = 1 AND stock <= min_stock ORDER BY stock")->fetchAll(PDO::FETCH_ASSOC);
-    $noStock = db()->query("SELECT * FROM products WHERE active = 1 AND stock = 0 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-    $overStock = db()->query("SELECT * FROM products WHERE active = 1 AND stock > 50 ORDER BY stock DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+    $stockStatus = $_GET['stock_status'] ?? '';
+    $stockWhere = "active = 1";
+    $stockOrder = "ORDER BY stock";
+    $stockParams = [];
+    
+    if ($search) {
+        $stockWhere .= " AND (code LIKE ? OR name LIKE ?)";
+        $searchTerm = "%$search%";
+        $stockParams[] = $searchTerm;
+        $stockParams[] = $searchTerm;
+    }
+    
+    if ($stockStatus === 'low') {
+        $stockWhere .= " AND stock <= min_stock AND stock > 0";
+    } elseif ($stockStatus === 'none') {
+        $stockWhere .= " AND stock = 0";
+    } elseif ($stockStatus === 'over') {
+        $stockWhere .= " AND stock > min_stock";
+    }
+    
+    $stmt = db()->prepare("SELECT * FROM products WHERE $stockWhere $stockOrder");
+    $stmt->execute($stockParams);
+    $stockData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $lowStock = array_filter($stockData, fn($p) => $p['stock'] <= $p['min_stock'] && $p['stock'] > 0);
+    $noStock = array_filter($stockData, fn($p) => $p['stock'] == 0);
+    $overStock = array_filter($stockData, fn($p) => $p['stock'] > $p['min_stock']);
     
     $content .= '
     <div class="row">
@@ -178,11 +281,19 @@ if ($type === 'stock') {
                 </div>
             </div>
         </div>
+        <div class="col-md-4">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <h6 class="text-muted">Con Stock</h6>
+                    <h3>' . count($overStock) . '</h3>
+                </div>
+            </div>
+        </div>
     </div>
     
     <div class="card mt-3">
         <div class="card-header">
-            <h5 class="mb-0">Productos con Stock Bajo</h5>
+            <h5 class="mb-0">Todos los Productos (Ordenados por Stock)</h5>
         </div>
         <div class="card-body p-0">
             <table class="table table-hover mb-0">
@@ -192,15 +303,19 @@ if ($type === 'stock') {
                         <th>Producto</th>
                         <th>Stock Actual</th>
                         <th>Stock Mínimo</th>
+                        <th>Estado</th>
                     </tr>
                 </thead>
                 <tbody>';
-    foreach ($lowStock as $p) {
+    foreach ($stockData as $p) {
+        $statusClass = $p['stock'] == 0 ? 'text-danger' : ($p['stock'] <= $p['min_stock'] ? 'text-warning' : 'text-success');
+        $statusLabel = $p['stock'] == 0 ? 'Sin Stock' : ($p['stock'] <= $p['min_stock'] ? 'Bajo' : 'OK');
         $content .= '<tr>
             <td>' . $p['code'] . '</td>
             <td>' . htmlspecialchars($p['name']) . '</td>
-            <td class="text-danger fw-bold">' . $p['stock'] . '</td>
+            <td class="' . $statusClass . ' fw-bold">' . $p['stock'] . '</td>
             <td>' . $p['min_stock'] . '</td>
+            <td><span class="badge bg-' . ($p['stock'] == 0 ? 'danger' : ($p['stock'] <= $p['min_stock'] ? 'warning' : 'success')) . '">' . $statusLabel . '</span></td>
         </tr>';
     }
     $content .= '</tbody>
@@ -210,15 +325,26 @@ if ($type === 'stock') {
 }
 
 if ($type === 'earnings') {
-    $earnings = db()->query("
+    $whereClause = "s.status = 'pagada'";
+    $params = [];
+    
+    if ($dateFrom && $dateTo) {
+        $whereClause .= " AND s.created_at BETWEEN ? AND ?";
+        $params[] = $dateFrom;
+        $params[] = $dateTo;
+    }
+    
+    $earningsStmt = db()->prepare("
         SELECT 
-            SUM(sd.subtotal) as ingresos,
-            SUM(sd.quantity * p.cost_price) as costos
+            COALESCE(SUM(sd.subtotal), 0) as ingresos,
+            COALESCE(SUM(sd.quantity * p.cost_price), 0) as costos
         FROM sale_details sd
         JOIN products p ON sd.product_id = p.id
         JOIN sales s ON sd.sale_id = s.id
-        WHERE s.created_at BETWEEN '$dateFrom' AND '$dateTo' AND s.status = 'pagada'
-    ")->fetch(PDO::FETCH_ASSOC);
+        WHERE $whereClause
+    ");
+    $earningsStmt->execute($params);
+    $earnings = $earningsStmt->fetch(PDO::FETCH_ASSOC);
     
     $ganancia = $earnings['ingresos'] - $earnings['costos'];
     $margen = $earnings['ingresos'] > 0 ? ($ganancia / $earnings['ingresos']) * 100 : 0;
