@@ -256,15 +256,12 @@ $monthName = $months[intval($month)];
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th width="8%">Cantidad</th>
-                        <th>DESCRIPCION</th>
-                        <th width="12%">Precio Unitario</th>
+                        <th rowspan="2" width="8%">Cantidad</th>
+                        <th rowspan="2">DESCRIPCION</th>
+                        <th rowspan="2" width="12%">Precio Unitario</th>
                         <th colspan="3" width="30%">VALOR DE VENTA</th>
                     </tr>
                     <tr>
-                        <th></th>
-                        <th></th>
-                        <th></th>
                         <th width="10%">EXENTAS</th>
                         <th width="10%">5%</th>
                         <th width="10%">10%</th>
