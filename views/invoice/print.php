@@ -54,6 +54,54 @@ $month = date('m', strtotime($sale['created_at']));
 $year = date('Y', strtotime($sale['created_at']));
 $months = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 $monthName = $months[intval($month)];
+
+function numberToText($numero) {
+    $numero = intval($numero);
+    $unidades = ['', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+    $decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+    $centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+    
+    if ($numero == 0) return 'CERO';
+    if ($numero == 100) return 'CIEN';
+    
+    $texto = '';
+    
+    $millones = intval($numero / 1000000);
+    $resto = $numero % 1000000;
+    
+    if ($millones > 0) {
+        $texto .= ($millones == 1 ? 'UN MILLON' : numberToText($millones) . ' MILLONES');
+    }
+    
+    $miles = intval($resto / 1000);
+    $resto = $resto % 1000;
+    
+    if ($miles > 0) {
+        $texto .= ($miles == 1 ? 'MIL ' : numberToText($miles) . ' MIL ');
+    }
+    
+    $cent = intval($resto / 100);
+    $resto = $resto % 100;
+    
+    if ($cent > 0) {
+        $texto .= $centenas[$cent] . ' ';
+    }
+    
+    if ($resto > 0) {
+        if ($resto < 10) {
+            $texto .= $unidades[$resto];
+        } elseif ($resto < 30) {
+            $texto .= ($resto == 20 ? 'VEINTE' : 'VEINTI' . $unidades[$resto % 10]);
+        } elseif ($resto < 100) {
+            $texto .= $decenas[intval($resto / 10)];
+            if ($resto % 10 > 0) $texto .= ' Y ' . $unidades[$resto % 10];
+        }
+    }
+    
+    return trim($texto);
+}
+
+$totalEnLetras = numberToText($sale['total']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -131,16 +179,21 @@ $monthName = $months[intval($month)];
             border: 1px solid #333; 
             padding: 3px; 
         }
+        .items-table th:first-child { border-left: 1px solid #333; }
+        .items-table th:last-child { border-right: 1px solid #333; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
         .totals { 
-            display: table; 
             width: 100%; 
             border: 1px solid #333;
             font-size: 10px;
+            border-collapse: collapse;
         }
-        .totals td { padding: 3px 5px; }
+        .totals td { 
+            padding: 3px 5px; 
+            border: 1px solid #333;
+        }
         
         .iva-box { 
             border: 1px solid #333; 
@@ -305,17 +358,17 @@ $monthName = $months[intval($month)];
             
             <table class="totals">
                 <tr>
-                    <td width="70%" class="text-right"><strong>SUB TOTAL:</strong></td>
+                    <td width="70%"><strong>SUB TOTAL:</strong></td>
                     <td width="30%" class="text-right"><?php echo number_format($sale['subtotal'], 0, ',', '.'); ?></td>
                 </tr>
                 <?php if ($sale['discount'] > 0): ?>
                 <tr>
-                    <td class="text-right">DESCUENTO:</td>
+                    <td>DESCUENTO:</td>
                     <td class="text-right">-<?php echo number_format($sale['discount'], 0, ',', '.'); ?></td>
                 </tr>
                 <?php endif; ?>
                 <tr>
-                    <td class="text-right"><strong>TOTAL A PAGAR:</strong></td>
+                    <td><strong>TOTAL A PAGAR: <?php echo $totalEnLetras; ?></strong></td>
                     <td class="text-right"><strong><?php echo number_format($sale['total'], 0, ',', '.'); ?></strong></td>
                 </tr>
             </table>
