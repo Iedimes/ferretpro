@@ -258,13 +258,13 @@ $monthName = $months[intval($month)];
                     <tr>
                         <th width="8%">Cantidad</th>
                         <th>DESCRIPCION</th>
-                        <th width="12%">Precio</th>
+                        <th width="12%">Precio Unitario</th>
                         <th colspan="3" width="30%">VALOR DE VENTA</th>
                     </tr>
                     <tr>
                         <th></th>
                         <th></th>
-                        <th>Unitario</th>
+                        <th></th>
                         <th width="10%">EXENTAS</th>
                         <th width="10%">5%</th>
                         <th width="10%">10%</th>
