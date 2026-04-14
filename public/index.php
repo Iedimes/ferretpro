@@ -271,6 +271,7 @@ switch ($page) {
                 $stmt = db()->prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
                 $stmt->execute([$key, $value]);
             }
+            Flash::success('Configuración guardada correctamente');
         }
         $settingsRows = db()->query("SELECT key, value FROM settings")->fetchAll(PDO::FETCH_ASSOC);
         $settings = [];
