@@ -83,8 +83,8 @@ $content .= '</div>
                         <div id="clientResults" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></div>
                     </div>
                     <select name="client_id" id="clientSelect" class="form-select form-select-sm mt-1" style="display: none;">
-                        <option value="" data-balance="0" data-category="minorista">Mostrador</option>
-                         ' . implode('', array_map(fn($c) => "<option value=\"{$c['id']}\" data-balance=\"{$c['balance']}\" data-document=\"{$c['document']}\" data-category=\"{$c['category']}\">{$c['name']} - {$c['document']} " . ($c['balance'] > 0 ? "(Deuda: " . Format::money($c['balance']) . ")" : "") . "</option>", $clients)) . '
+                        <option value="" data-balance="0" data-category="minorista" data-credit-limit="0">Mostrador</option>
+                         ' . implode('', array_map(fn($c) => "<option value=\"{$c['id']}\" data-balance=\"{$c['balance']}\" data-document=\"{$c['document']}\" data-category=\"{$c['category']}\" data-credit-limit=\"{$c['credit_limit']}\">{$c['name']} - {$c['document']} " . ($c['balance'] > 0 ? "(Deuda: " . Format::money($c['balance']) . ")" : "") . "</option>", $clients)) . '
                     </select>
                     <div class="form-check mt-2">
                         <input type="checkbox" class="form-check-input" id="wholesaleDiscount" onchange="renderCart()">
@@ -96,7 +96,6 @@ $content .= '</div>
                     <select name="sale_type" id="saleType" class="form-select form-select-sm" onchange="checkSaleType()">
                         <option value="contado">Contado</option>
                         <option value="credito">Crédito (Anotar)</option>
-                        <option value="mayorista">Mayorista</option>
                     </select>
                 </div>
                 <div class="mb-2">
@@ -393,15 +392,37 @@ function processSale() {
     const clientSelect = document.getElementById("clientSelect");
     const saleType = document.getElementById("saleType").value;
     const clientId = clientSelect.value;
-    const clientBalance = clientSelect.options[clientSelect.selectedIndex]?.dataset.balance || 0;
+    const selectedOption = clientSelect.options[clientSelect.selectedIndex];
+    const clientBalance = parseFloat(selectedOption?.dataset.balance) || 0;
+    const creditLimit = parseFloat(selectedOption?.dataset.creditLimit) || 0;
+    
+    // Calcular total del carrito
+    const wholesaleDiscount = document.getElementById("wholesaleDiscount").checked;
+    const wholesalePct = wholesaleDiscount ? 0.15 : 0;
+    const globalDiscount = parseFloat(document.getElementById("globalDiscount").value) || 0;
+    let cartTotal = 0;
+    posCart.forEach(item => {
+        let price = item.price;
+        if (wholesalePct > 0) price = price * (1 - wholesalePct);
+        cartTotal += price * item.qty;
+    });
+    cartTotal = cartTotal * (1 - globalDiscount / 100);
     
     if (saleType === "credito" && !clientId) {
         alert("Debe seleccionar un cliente para crédito");
         return;
     }
     
-    if (clientBalance > 0) {
-        if (!confirm("El cliente tiene una deuda pendiente de Gs. " + formatMoney(parseFloat(clientBalance)) + ". ¿Continuar?")) {
+    if (saleType === "credito" && creditLimit > 0) {
+        const newBalance = clientBalance + cartTotal;
+        if (newBalance > creditLimit) {
+            const excess = newBalance - creditLimit;
+            if (!confirm("Límite de crédito excedido.\n\nCliente: " + selectedOption.text + "\nLímite: Gs. " + formatMoney(creditLimit) + "\nDeuda actual: Gs. " + formatMoney(clientBalance) + "\nEsta venta: Gs. " + formatMoney(cartTotal) + "\nExcedería: Gs. " + formatMoney(excess) + "\n\n¿Confirmar con autorización?")) {
+                return;
+            }
+        }
+    } else if (clientBalance > 0) {
+        if (!confirm("El cliente tiene una deuda pendiente de Gs. " + formatMoney(clientBalance) + ". ¿Continuar?")) {
             return;
         }
     }
