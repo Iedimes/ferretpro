@@ -134,7 +134,7 @@ $totalEnLetras = numberToText($sale['total']);
             border: 1px solid #333; 
             padding: 5px; 
             text-align: center;
-            min-height: 100px;
+            min-height: 101px;
             width: 100%;
         }
         
