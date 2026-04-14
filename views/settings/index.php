@@ -64,6 +64,32 @@ $content = '
             </div>
         </div>
     </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Timbrado Fiscal</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Número de Timbrado</label>
+                    <input type="text" name="timbrado_num" class="form-control" placeholder="18672488" value="' . htmlspecialchars($settings['timbrado_num'] ?? '') . '">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha Inicio Vigencia</label>
+                    <input type="date" name="timbrado_inicio" class="form-control" value="' . htmlspecialchars($settings['timbrado_inicio'] ?? date('Y-m-d')) . '">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha Fin Vigencia</label>
+                    <input type="date" name="timbrado_fin" class="form-control" value="' . htmlspecialchars($settings['timbrado_fin'] ?? date('Y-m-d', strtotime('+1 year'))) . '">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Dirección Empresa</label>
+                    <input type="text" name="company_address" class="form-control" placeholder="Asunción, Paraguay" value="' . htmlspecialchars($settings['company_address'] ?? '') . '">
+                </div>
+            </div>
+        </div>
+    </div>
 </form>
 
 <div class="card mt-4">

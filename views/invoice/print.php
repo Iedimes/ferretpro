@@ -20,7 +20,7 @@ if (!$sale) {
     die("Venta no encontrada");
 }
 
-$stmtDetails = db()->prepare("SELECT sd.*, p.name as product_name, p.code as product_code 
+$stmtDetails = db()->prepare("SELECT sd.*, p.name as product_name, p.code as product_code, p.iva as product_iva 
     FROM sale_details sd 
     LEFT JOIN products p ON sd.product_id = p.id 
     WHERE sd.sale_id = ?");
@@ -33,7 +33,6 @@ foreach ($settingsRows as $row) {
     $settings[$row['key']] = $row['value'];
 }
 
-$invoiceType = $settings['invoice_type'] ?? 'letter';
 $companyName = $settings['company_name'] ?? 'Ferretería';
 $companyPhone = $settings['company_phone'] ?? '';
 $companyEmail = $settings['company_email'] ?? '';
@@ -41,80 +40,124 @@ $companyDocument = $settings['company_document'] ?? '';
 $invoicePrefix = $settings['invoice_prefix'] ?? '001-001-';
 $invoicePos = $settings['invoice_pos'] ?? '001';
 
-$saleTypeLabel = $sale['type'] === 'contado' ? 'Contado' : 'Crédito';
+$saleTypeLabel = $sale['type'] === 'contado' ? 'X' : '';
+$saleTypeCredito = $sale['type'] === 'credito' ? 'X' : '';
 $paymentMethodLabel = ucfirst($sale['payment_method']);
 $deliveryTypeLabel = $sale['delivery_type'] === 'mostrador' ? 'Mostrador' : ($sale['delivery_type'] === 'delivery' ? 'Delivery' : 'Pendiente');
+
+$invoiceNumber = $invoicePrefix . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Factura #<?php echo $sale_id; ?></title>
+    <title>Factura <?php echo $invoiceNumber; ?></title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; }
         
-        .invoice-container {
-            max-width: <?php echo $invoiceType === 'thermal' ? '58mm' : '210mm'; ?>;
-            margin: 0 auto;
-            padding: <?php echo $invoiceType === 'thermal' ? '5mm' : '20mm'; ?>;
-        }
+        .invoice { width: 180mm; margin: 0 auto; padding: 5mm; }
         
-        .header { text-align: center; margin-bottom: 15px; }
-        .company-name { font-size: <?php echo $invoiceType === 'thermal' ? '14px' : '18px'; ?>; font-weight: bold; }
-        .company-info { font-size: 10px; margin-top: 5px; }
+        .header { text-align: center; margin-bottom: 10px; }
+        .company-name { font-size: 14px; font-weight: bold; }
+        .company-activity { font-size: 9px; margin-top: 2px; }
+        .company-address { font-size: 9px; margin-top: 2px; }
+        .company-contact { font-size: 9px; margin-top: 2px; }
         
+        .invoice-box { border: 2px solid #333; padding: 3mm; }
         .invoice-title { 
-            font-size: <?php echo $invoiceType === 'thermal' ? '14px' : '24px'; ?>; 
+            font-size: 16px; 
             font-weight: bold; 
-            margin: 15px 0;
             text-align: center;
-            border: 2px solid #333;
-            padding: 5px;
+            margin-bottom: 5px;
+        }
+        .timbrado { 
+            font-size: 9px; 
+            text-align: right;
+            margin-bottom: 5px;
         }
         
-        .invoice-info { margin-bottom: 15px; }
-        .invoice-info-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-        
-        .client-info { 
-            border: 1px solid #ccc; 
-            padding: 10px; 
-            margin-bottom: 15px;
-            font-size: 11px;
-        }
-        
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .items-table th { 
-            border-bottom: 2px solid #333; 
-            padding: 5px; 
-            text-align: left;
+        .date-conditions { 
+            display: table; 
+            width: 100%; 
+            border: 1px solid #333;
+            margin-bottom: 5px;
             font-size: 10px;
         }
+        .date-conditions td { padding: 3px; }
+        
+        .client-box { 
+            border: 1px solid #333; 
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        .client-box td { padding: 3px; }
+        
+        .items-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        .items-table th { 
+            border: 1px solid #333; 
+            padding: 3px; 
+            text-align: center;
+            background: #eee;
+        }
         .items-table td { 
-            border-bottom: 1px solid #ccc; 
-            padding: 5px; 
+            border: 1px solid #333; 
+            padding: 3px; 
         }
         .text-right { text-align: right; }
+        .text-center { text-align: center; }
         
-        .totals { margin-top: 15px; }
-        .totals-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 5px 0;
-            border-bottom: 1px solid #ccc;
+        .totals { 
+            display: table; 
+            width: 100%; 
+            border: 1px solid #333;
+            font-size: 10px;
         }
-        .totals-row.total { 
-            font-size: 14px; 
-            font-weight: bold; 
-            border-bottom: 2px solid #333;
-            border-top: 2px solid #333;
+        .totals td { padding: 3px 5px; }
+        
+        .iva-box { 
+            border: 1px solid #333; 
+            margin-top: 5px;
+            font-size: 10px;
+        }
+        .iva-box td { padding: 3px; }
+        
+        .footer { 
+            margin-top: 10px; 
+            font-size: 9px; 
+            text-align: center;
+        }
+        .footer-box { 
+            border: 1px solid #333; 
+            padding: 3px;
+            font-size: 9px;
         }
         
-        .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+        .checkbox {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #333;
+            margin-right: 3px;
+            text-align: center;
+            line-height: 12px;
+            font-size: 10px;
+        }
         
         @media print {
             body { -webkit-print-color-adjust: exact; }
             .no-print { display: none; }
+            .invoice { width: 100%; padding: 0; }
+        }
+        
+        @page {
+            size: A4;
+            margin: 5mm;
         }
     </style>
 </head>
@@ -124,89 +167,145 @@ $deliveryTypeLabel = $sale['delivery_type'] === 'mostrador' ? 'Mostrador' : ($sa
         <a href="?page=sales" class="btn btn-secondary">Volver</a>
     </div>
     
-    <div class="invoice-container">
+    <div class="invoice">
         <div class="header">
             <div class="company-name"><?php echo htmlspecialchars($companyName); ?></div>
-            <div class="company-info">
-                <?php if ($companyPhone): ?><?php echo htmlspecialchars($companyPhone); ?><?php endif; ?>
-                <?php if ($companyEmail): ?> | <?php echo htmlspecialchars($companyEmail); ?><?php endif; ?>
-                <?php if ($companyDocument): ?> | RUC: <?php echo htmlspecialchars($companyDocument); ?><?php endif; ?>
+            <div class="company-activity">INSTALACIÓN DE CALEFACCIÓN Y AIRE ACONDICIONADO | MANTENIMIENTO Y REPARACIÓN DE EQUIPOS ELÉCTRICOS</div>
+            <div class="company-address"><?php echo htmlspecialchars($settings['company_address'] ?? 'Asunción'); ?></div>
+            <div class="company-contact">
+                <?php if ($companyEmail): ?><?php echo htmlspecialchars($companyEmail); ?><?php endif; ?>
+                <?php if ($companyPhone): ?> | Tel: <?php echo htmlspecialchars($companyPhone); ?><?php endif; ?>
             </div>
         </div>
         
-        <div class="invoice-title">
-            <?php echo $invoicePrefix; ?><?php echo str_pad($sale_id, 7, '0', STR_PAD_LEFT); ?>
-        </div>
-        
-        <div class="invoice-info">
-            <div class="invoice-info-row">
-                <span><strong>Fecha:</strong> <?php echo date('d/m/Y H:i', strtotime($sale['created_at'])); ?></span>
-                <span><strong>Vendedor:</strong> <?php echo htmlspecialchars($sale['user_name']); ?></span>
+        <div class="invoice-box">
+            <div class="invoice-title">FACTURA</div>
+            <div class="timbrado">
+                TIMBRADO Nº: <?php echo htmlspecialchars($settings['timbrado_num'] ?? '18672488'); ?><br>
+                Vigencia: <?php echo htmlspecialchars($settings['timbrado_inicio'] ?? '24/02/2026'); ?> al <?php echo htmlspecialchars($settings['timbrado_fin'] ?? '28/02/2027'); ?><br>
+                RUC: <?php echo htmlspecialchars($companyDocument); ?><br>
+                <?php echo $invoiceNumber; ?>
             </div>
-            <div class="invoice-info-row">
-                <span><strong>Tipo:</strong> <?php echo $saleTypeLabel; ?></span>
-                <span><strong>Pago:</strong> <?php echo $paymentMethodLabel; ?></span>
-            </div>
-            <div class="invoice-info-row">
-                <span><strong>Entrega:</strong> <?php echo $deliveryTypeLabel; ?></span>
-            </div>
-        </div>
-        
-        <?php if ($sale['client_id']): ?>
-        <div class="client-info">
-            <strong>Cliente:</strong> <?php echo htmlspecialchars($sale['client_name']); ?><br>
-            <?php if ($sale['client_document']): ?><strong>RUC/CI:</strong> <?php echo htmlspecialchars($sale['client_document']); ?><br><?php endif; ?>
-            <?php if ($sale['client_phone']): ?><strong>Teléfono:</strong> <?php echo htmlspecialchars($sale['client_phone']); ?><?php endif; ?>
-        </div>
-        <?php else: ?>
-        <div class="client-info">
-            <strong>Cliente:</strong> Mostrador
-        </div>
-        <?php endif; ?>
-        
-        <table class="items-table">
-            <thead>
+            
+            <table class="date-conditions">
                 <tr>
-                    <th style="width: 50px;">Código</th>
-                    <th>Producto</th>
-                    <th class="text-right" style="width: 50px;">Cant</th>
-                    <th class="text-right" style="width: 70px;">P.Unit</th>
-                    <th class="text-right" style="width: 80px;">Subtotal</th>
+                    <td width="50%">Asunción, <?php echo date('d', strtotime($sale['created_at'])); ?> de <?php echo date('m', strtotime($sale['created_at'])); ?> de <?php echo date('Y', strtotime($sale['created_at'])); ?></td>
+                    <td width="50%">
+                        Condición de Venta: 
+                        <span class="checkbox"><?php echo $saleTypeLabel; ?></span> CONTADO
+                        <span class="checkbox"><?php echo $saleTypeCredito; ?></span> CRÉDITO
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($saleDetails as $item): ?>
+            </table>
+            
+            <table class="client-box">
                 <tr>
-                    <td><?php echo htmlspecialchars($item['product_code']); ?></td>
-                    <td><?php echo htmlspecialchars($item['product_name']); ?></td>
-                    <td class="text-right"><?php echo $item['quantity']; ?></td>
-                    <td class="text-right"><?php echo number_format($item['unit_price'], 0, ',', '.'); ?></td>
-                    <td class="text-right"><?php echo number_format($item['subtotal'], 0, ',', '.'); ?></td>
+                    <td width="20%">C.I. Nº / R.U.C.:</td>
+                    <td width="30%"><?php echo htmlspecialchars($sale['client_document'] ?? ''); ?></td>
+                    <td width="20%">Teléfono:</td>
+                    <td width="30%"><?php echo htmlspecialchars($sale['client_phone'] ?? ''); ?></td>
                 </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        
-        <div class="totals">
-            <div class="totals-row">
-                <span>Subtotal:</span>
-                <span><?php echo number_format($sale['subtotal'], 0, ',', '.'); ?></span>
+                <tr>
+                    <td>Nombre o Razón Social:</td>
+                    <td colspan="3"><?php echo htmlspecialchars($sale['client_name'] ?? 'MOSTRADOR'); ?></td>
+                </tr>
+                <tr>
+                    <td>Dirección:</td>
+                    <td colspan="3"><?php echo htmlspecialchars($sale['client_address'] ?? ''); ?></td>
+                </tr>
+            </table>
+            
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th width="8%">Cantidad</th>
+                        <th>DESCRIPCION</th>
+                        <th width="12%">Precio</th>
+                        <th colspan="3" width="30%">VALOR DE VENTA</th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th>Unitario</th>
+                        <th width="10%">EXENTAS</th>
+                        <th width="10%">5%</th>
+                        <th width="10%">10%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $totalExento = 0;
+                    $totalIva5 = 0;
+                    $totalIva10 = 0;
+                    foreach ($saleDetails as $item): 
+                        $iva = intval($item['product_iva'] ?? $item['iva'] ?? 10);
+                        $subtotal = floatval($item['subtotal']);
+                        
+                        // Calcular base y IVA
+                        if ($iva == 10) {
+                            $base = $subtotal / 1.10;
+                            $ivaAmount = $subtotal - $base;
+                            $totalIva10 += $ivaAmount;
+                            $baseFormatted = $base;
+                        } elseif ($iva == 5) {
+                            $base = $subtotal / 1.05;
+                            $ivaAmount = $subtotal - $base;
+                            $totalIva5 += $ivaAmount;
+                            $baseFormatted = $base;
+                        } else {
+                            $baseFormatted = $subtotal;
+                            $totalExento += $subtotal;
+                        }
+                    ?>
+                    <tr>
+                        <td class="text-center"><?php echo $item['quantity']; ?></td>
+                        <td><?php echo htmlspecialchars($item['product_name']); ?></td>
+                        <td class="text-right"><?php echo number_format($item['unit_price'], 0, ',', '.'); ?></td>
+                        <td class="text-right"><?php echo $iva == 0 ? number_format($baseFormatted, 0, ',', '.') : '0'; ?></td>
+                        <td class="text-right"><?php echo $iva == 5 ? number_format($baseFormatted, 0, ',', '.') : '0'; ?></td>
+                        <td class="text-right"><?php echo $iva == 10 ? number_format($baseFormatted, 0, ',', '.') : '0'; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            
+            <table class="totals">
+                <tr>
+                    <td width="70%" class="text-right"><strong>SUB TOTAL:</strong></td>
+                    <td width="30%" class="text-right"><?php echo number_format($sale['subtotal'], 0, ',', '.'); ?></td>
+                </tr>
+                <?php if ($sale['discount'] > 0): ?>
+                <tr>
+                    <td class="text-right">DESCUENTO:</td>
+                    <td class="text-right">-<?php echo number_format($sale['discount'], 0, ',', '.'); ?></td>
+                </tr>
+                <?php endif; ?>
+                <tr>
+                    <td class="text-right"><strong>TOTAL A PAGAR:</strong></td>
+                    <td class="text-right"><strong><?php echo number_format($sale['total'], 0, ',', '.'); ?></strong></td>
+                </tr>
+            </table>
+            
+            <table class="iva-box">
+                <tr>
+                    <td colspan="2"><strong>LIQUIDACIÓN DEL IVA</strong></td>
+                </tr>
+                <tr>
+                    <td width="33%">(5%): <?php echo number_format($totalIva5, 0, ',', '.'); ?></td>
+                    <td width="33%">(10%): <?php echo number_format($totalIva10, 0, ',', '.'); ?></td>
+                    <td width="34%">TOTAL IVA: <?php echo number_format($totalIva5 + $totalIva10, 0, ',', '.'); ?></td>
+                </tr>
+            </table>
+            
+            <div class="footer">
+                <div class="footer-box">
+                    <strong>Gracias por su preferencia</strong><br>
+                    <?php echo htmlspecialchars($companyName); ?> - RUC: <?php echo htmlspecialchars($companyDocument); ?>
+                </div>
+                <div style="margin-top: 3px;">
+                    ORIGINAL: Cliente | DUPLICADO: Archivo Tributario
+                </div>
             </div>
-            <?php if ($sale['discount'] > 0): ?>
-            <div class="totals-row">
-                <span>Descuento:</span>
-                <span>-<?php echo number_format($sale['discount'], 0, ',', '.'); ?></span>
-            </div>
-            <?php endif; ?>
-            <div class="totals-row total">
-                <span>TOTAL:</span>
-                <span><?php echo number_format($sale['total'], 0, ',', '.'); ?></span>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>Gracias por su preferencia</p>
-            <p> <?php echo $companyName; ?></p>
         </div>
     </div>
 </body>
