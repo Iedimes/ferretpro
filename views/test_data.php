@@ -6,15 +6,23 @@ require_once dirname(__DIR__) . '/class/Database.php';
 
 $db = Database::getInstance();
 
-echo "<h3>Insertando datos de prueba...</h3>";
+echo "<h3>Generando datos de prueba...</h3>";
 
-// Verificar si ya hay datos
-$count = $db->query("SELECT COUNT(*) as c FROM sales")->fetch(PDO::FETCH_ASSOC);
-if ($count['c'] > 0) {
-    echo "<p style='color:orange;'>Ya existen datos de prueba. No se insertaron duplicados.</p>";
-    echo "<a href='?page=dashboard'>Ir al Dashboard</a>";
-    exit;
-}
+// Limpiar datos de prueba anteriores (mantener clientes y proveedores)
+$db->exec("DELETE FROM sale_details");
+$db->exec("DELETE FROM sales");
+$db->exec("DELETE FROM accounts_receivable");
+$db->exec("DELETE FROM accounts_payable");
+$db->exec("DELETE FROM purchases");
+$db->exec("DELETE FROM purchase_details");
+$db->exec("DELETE FROM quotes");
+$db->exec("DELETE FROM quote_details");
+$db->exec("DELETE FROM credit_notes");
+$db->exec("DELETE FROM credit_note_details");
+$db->exec("DELETE FROM expenses");
+$db->exec("UPDATE clients SET balance = 0");
+
+echo "<p style='color:gray;'>Datos anteriores limpiados.</p>";
 
 // Ventas de distintos tipos y fechas
 $db->exec("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, created_at) VALUES (1, 2, 'contado', 'efectivo', 250000, 0, 250000, 'mostrador', 'pagada', datetime('now', '-15 days'))");
