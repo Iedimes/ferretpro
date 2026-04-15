@@ -274,6 +274,11 @@ switch ($page) {
             $stmt = db()->prepare("UPDATE accounts_payable SET status = 'pagado', paid_amount = amount WHERE id = ?");
             $stmt->execute([$ap_id]);
             
+            if ($ap['purchase_id']) {
+                $stmtPurchase = db()->prepare("UPDATE purchases SET status = 'paid' WHERE id = ?");
+                $stmtPurchase->execute([$ap['purchase_id']]);
+            }
+            
             Flash::success('Cuenta pagada');
             header('Location: ?page=payable');
             exit;
@@ -851,6 +856,9 @@ case 'sale_products':
                     $dueDate = date('Y-m-d', strtotime('+30 days'));
                     $stmtCxP = db()->prepare("INSERT INTO accounts_payable (provider_id, purchase_id, amount, due_date, status, created_at) VALUES (?, ?, ?, ?, 'pendiente', datetime('now'))");
                     $stmtCxP->execute([$providerId, $purchaseId, $subtotal, $dueDate]);
+                    
+                    $stmtPurchase = db()->prepare("UPDATE purchases SET status = 'pending' WHERE id = ?");
+                    $stmtPurchase->execute([$purchaseId]);
                 }
                 
                 foreach ($items as $productId => $item) {
