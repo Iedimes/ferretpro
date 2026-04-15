@@ -760,7 +760,7 @@ case 'sale_products':
                     $subtotal += $price * $qty;
                 }
                 
-                $stmt = db()->prepare("INSERT INTO credit_notes (sale_id, user_id, client_id, reason, subtotal, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))");
+                $stmt = db()->prepare("INSERT INTO credit_notes (sale_id, user_id, client_id, reason, subtotal, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))");
                 $stmt->execute([$saleId, $userId, $sale['client_id'], $reason, $subtotal, $subtotal]);
                 $cnId = db()->lastInsertId();
                 
