@@ -231,18 +231,54 @@ if (!$cashRegister) {
     </div>';
 }
 
+// Historial de cajas cerradas
+$closedRegisters = db()->query("
+    SELECT cr.*, u.name as user_name
+    FROM cash_register cr
+    LEFT JOIN users u ON cr.user_id = u.id
+    WHERE cr.status = 'closed'
+    ORDER BY cr.closed_at DESC
+    LIMIT 30
+")->fetchAll(PDO::FETCH_ASSOC);
+
 if ($lastClosed) {
     $content .= '
     <div class="card mt-3">
         <div class="card-header">
-            <h5 class="mb-0">Último Cierre</h5>
+            <h5 class="mb-0">Historial de Cajas</h5>
         </div>
-        <div class="card-body">
-            <p><strong>Fecha:</strong> ' . Format::date($lastClosed['closed_at']) . '</p>
-            <p><strong>Usuario:</strong> ' . htmlspecialchars($lastClosed['user_name']) . '</p>
-            <p><strong>Apertura:</strong> ' . Format::money($lastClosed['opening_amount']) . '</p>
-            <p><strong>Cierre:</strong> ' . Format::money($lastClosed['closing_amount']) . '</p>
-            <p><strong>Diferencia:</strong> ' . Format::money($lastClosed['difference']) . '</p>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha Apertura</th>
+                        <th>Fecha Cierre</th>
+                        <th>Usuario</th>
+                        <th>Apertura</th>
+                        <th>Cierre</th>
+                        <th>Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody>';
+    
+    if (count($closedRegisters) == 0) {
+        $content .= '<tr><td colspan="6" class="text-center">No hay cajas cerradas</td></tr>';
+    } else {
+        foreach ($closedRegisters as $cr) {
+            $diffClass = $cr['difference'] > 0 ? 'text-success' : ($cr['difference'] < 0 ? 'text-danger' : '');
+            $content .= '<tr>
+                <td>' . Format::date($cr['opened_at']) . '</td>
+                <td>' . Format::date($cr['closed_at']) . '</td>
+                <td>' . htmlspecialchars($cr['user_name']) . '</td>
+                <td>' . Format::money($cr['opening_amount']) . '</td>
+                <td>' . Format::money($cr['closing_amount'] ?? 0) . '</td>
+                <td class="' . $diffClass . '"><strong>' . Format::money($cr['difference'] ?? 0) . '</strong></td>
+            </tr>';
+        }
+    }
+    
+    $content .= '</tbody>
+            </table>
         </div>
     </div>';
 }
