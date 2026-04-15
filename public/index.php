@@ -168,6 +168,11 @@ if ($page === 'reset_password_post' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+if ($page === 'test_data') {
+    include dirname(__DIR__) . '/views/test_data.php';
+    exit;
+}
+
 if (!auth()) {
     header('Location: ?page=login');
     exit;
@@ -998,9 +1003,7 @@ case 'sale_products':
         include dirname(__DIR__) . '/views/backup/index.php';
         break;
         
-    case 'test_data':
-        include dirname(__DIR__) . '/views/test_data.php';
-        break;
+    
         
     case 'backup_create':
         try {
