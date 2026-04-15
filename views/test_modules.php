@@ -41,11 +41,7 @@ foreach ($pages as $page => $name) {
             continue;
         }
         
-        $content = file_get_contents($pageFile);
-        
-        if (strpos($content, 'db()->query') !== false || strpos($content, 'db()->exec') !== false) {
-            include $pageFile;
-        }
+        include $pageFile;
         
         $results[] = "<tr><td>$name</td><td class='text-success'>OK</td></tr>";
         ob_end_clean();
@@ -67,7 +63,7 @@ function testCRUD($table, $name) {
         $count = $db->query("SELECT COUNT(*) as cnt FROM $table")->fetch(PDO::FETCH_ASSOC);
         return "<tr><td>$name</td><td>{$count['cnt']} registros</td><td class='text-success'>OK</td></tr>";
     } catch (Exception $e) {
-        return "<tr><td>$name</td><td class='text-danger'>ERROR</td><td>{$e->getMessage()}</td></tr>";
+        return "<tr><td>$name</td><td class='text-danger'>ERROR</td></tr>";
     }
 }
 
