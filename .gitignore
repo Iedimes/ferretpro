@@ -1,7 +1,7 @@
 <?php
-// Ignorar la base de datos SQLite
-*.db
-*.sqlite
+// Base de datos (agregar al git para demo)
+# *.db
+# *.sqlite
 
 // Ignorar archivos del sistema
 .DS_Store
