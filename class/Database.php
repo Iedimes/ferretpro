@@ -397,6 +397,22 @@ class Database extends PDO {
             $this->exec("ALTER TABLE users ADD COLUMN two_fa_secret TEXT");
         } catch (Exception $e) {}
         
+        try {
+            $this->exec("ALTER TABLE cash_movements ADD COLUMN cuenta TEXT DEFAULT 'caja'");
+        } catch (Exception $e) {}
+        
+        try {
+            $this->exec("ALTER TABLE cash_movements ADD COLUMN referencia TEXT");
+        } catch (Exception $e) {}
+        
+        try {
+            $this->exec("ALTER TABLE expenses ADD COLUMN cuenta TEXT DEFAULT 'caja'");
+        } catch (Exception $e) {}
+        
+        try {
+            $this->exec("ALTER TABLE expenses ADD COLUMN referencia TEXT");
+        } catch (Exception $e) {}
+        
         $this->seedDefaultData();
     }
     
