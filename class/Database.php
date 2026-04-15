@@ -194,6 +194,116 @@ class Database extends PDO {
                 expires_at DATETIME,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
+            
+            CREATE TABLE IF NOT EXISTS credit_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sale_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                client_id INTEGER,
+                reason TEXT NOT NULL,
+                subtotal REAL NOT NULL,
+                discount REAL DEFAULT 0,
+                total REAL NOT NULL,
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (sale_id) REFERENCES sales(id),
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (client_id) REFERENCES clients(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS credit_note_details (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                credit_note_id INTEGER NOT NULL,
+                product_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_price REAL NOT NULL,
+                subtotal REAL NOT NULL,
+                FOREIGN KEY (credit_note_id) REFERENCES credit_notes(id),
+                FOREIGN KEY (product_id) REFERENCES products(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS quotes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                client_id INTEGER,
+                client_name TEXT,
+                client_document TEXT,
+                user_id INTEGER NOT NULL,
+                subtotal REAL NOT NULL,
+                discount REAL DEFAULT 0,
+                total REAL NOT NULL,
+                validity_days INTEGER DEFAULT 30,
+                notes TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                expires_at DATETIME,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (client_id) REFERENCES clients(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS quote_details (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quote_id INTEGER NOT NULL,
+                product_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_price REAL NOT NULL,
+                subtotal REAL NOT NULL,
+                FOREIGN KEY (quote_id) REFERENCES quotes(id),
+                FOREIGN KEY (product_id) REFERENCES products(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS purchases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                invoice_number TEXT,
+                subtotal REAL NOT NULL,
+                discount REAL DEFAULT 0,
+                total REAL NOT NULL,
+                payment_method TEXT DEFAULT 'contado',
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (provider_id) REFERENCES providers(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS purchase_details (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                purchase_id INTEGER NOT NULL,
+                product_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_cost REAL NOT NULL,
+                subtotal REAL NOT NULL,
+                FOREIGN KEY (purchase_id) REFERENCES purchases(id),
+                FOREIGN KEY (product_id) REFERENCES products(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS cash_register (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                opening_amount REAL NOT NULL,
+                closing_amount REAL,
+                expected_amount REAL,
+                difference REAL,
+                status TEXT DEFAULT 'open',
+                opening_notes TEXT,
+                closing_notes TEXT,
+                opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                closed_at DATETIME,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS cash_movements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cash_register_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                description TEXT,
+                payment_method TEXT DEFAULT 'efectivo',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (cash_register_id) REFERENCES cash_register(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
         ");
         
         try {

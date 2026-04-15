@@ -353,6 +353,533 @@ switch ($page) {
         view('profile', compact('userInfo', 'loginHistory'));
         break;
         
+    case 'quotes':
+        if ($action === 'new' || $action === 'edit') {
+            $clients = db()->query("SELECT * FROM clients WHERE active = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+            $products = db()->query("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.active = 1 ORDER BY p.name")->fetchAll(PDO::FETCH_ASSOC);
+            
+            $edit_quote = null;
+            $quote_details = [];
+            if ($action === 'edit' && isset($_GET['id'])) {
+                $edit_quote_id = intval($_GET['id']);
+                $edit_quote = db()->prepare("SELECT * FROM quotes WHERE id = ?");
+                $edit_quote->execute([$edit_quote_id]);
+                $edit_quote = $edit_quote->fetch(PDO::FETCH_ASSOC);
+                
+                $quote_details = db()->prepare("SELECT qd.*, p.name, p.code FROM quote_details qd JOIN products p ON qd.product_id = p.id WHERE qd.quote_id = ?");
+                $quote_details->execute([$edit_quote_id]);
+                $quote_details = $quote_details->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            view('quotes/edit', compact('clients', 'products', 'edit_quote', 'quote_details'));
+            break;
+        }
+        
+        if ($action === 'view' && isset($_GET['id'])) {
+            $quote_id = intval($_GET['id']);
+            $quote = db()->prepare("SELECT q.*, c.name as client_name, u.name as user_name FROM quotes q LEFT JOIN clients c ON q.client_id = c.id LEFT JOIN users u ON q.user_id = u.id WHERE q.id = ?");
+            $quote->execute([$quote_id]);
+            $quote = $quote->fetch(PDO::FETCH_ASSOC);
+            
+            $details = db()->prepare("SELECT qd.*, p.name, p.code FROM quote_details qd JOIN products p ON qd.product_id = p.id WHERE qd.quote_id = ?");
+            $details->execute([$quote_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            view('quotes/view', compact('quote', 'details'));
+            break;
+        }
+        
+        if ($action === 'convert' && isset($_GET['id'])) {
+            $quote_id = intval($_GET['id']);
+            $quote = db()->prepare("SELECT * FROM quotes WHERE id = ?");
+            $quote->execute([$quote_id]);
+            $quote = $quote->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$quote || $quote['status'] !== 'pending') {
+                Flash::error('No se puede convertir esta cotización');
+                header('Location: ?page=quotes');
+                exit;
+            }
+            
+            $details = db()->prepare("SELECT * FROM quote_details WHERE quote_id = ?");
+            $details->execute([$quote_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, subtotal, discount, total, type, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, 'contado', 'efectivo', 'pagada', datetime('now'))");
+            $stmt->execute([$quote['user_id'], $quote['client_id'], $quote['subtotal'], $quote['discount'], $quote['total']]);
+            $saleId = db()->lastInsertId();
+            
+            foreach ($details as $item) {
+                $stmtDetail = db()->prepare("INSERT INTO sale_details (sale_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)");
+                $stmtDetail->execute([$saleId, $item['product_id'], $item['quantity'], $item['unit_price'], $item['subtotal']]);
+                
+                $stmtStock = db()->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
+                $stmtStock->execute([$item['quantity'], $item['product_id']]);
+            }
+            
+            $stmtUpdate = db()->prepare("UPDATE quotes SET status = 'converted', converted_sale_id = ? WHERE id = ?");
+            $stmtUpdate->execute([$saleId, $quote_id]);
+            
+            Flash::success('Cotización convertida a venta #' . $saleId);
+            header('Location: ?page=sales&action=print&id=' . $saleId);
+            exit;
+        }
+        
+        if ($action === 'delete' && isset($_GET['id'])) {
+            $quote_id = intval($_GET['id']);
+            $stmt = db()->prepare("DELETE FROM quote_details WHERE quote_id = ?");
+            $stmt->execute([$quote_id]);
+            $stmt = db()->prepare("DELETE FROM quotes WHERE id = ?");
+            $stmt->execute([$quote_id]);
+            Flash::success('Cotización eliminada');
+            header('Location: ?page=quotes');
+            exit;
+        }
+        
+        if ($action === 'print' && isset($_GET['id'])) {
+            $quote_id = intval($_GET['id']);
+            $quote = db()->prepare("SELECT q.*, c.name as client_name, c.document as client_document, u.name as user_name FROM quotes q LEFT JOIN clients c ON q.client_id = c.id LEFT JOIN users u ON q.user_id = u.id WHERE q.id = ?");
+            $quote->execute([$quote_id]);
+            $quote = $quote->fetch(PDO::FETCH_ASSOC);
+            
+            $details = db()->prepare("SELECT qd.*, p.name, p.code FROM quote_details qd JOIN products p ON qd.product_id = p.id WHERE qd.quote_id = ?");
+            $details->execute([$quote_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            include dirname(__DIR__) . '/views/quotes/print.php';
+            exit;
+        }
+        
+        view('quotes/index');
+        break;
+        
+case 'quotes_save':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $clientId = $_POST['client_id'] ?? null;
+                $validityDays = intval($_POST['validity_days'] ?? 30);
+                $discount = floatval($_POST['discount'] ?? 0);
+                $notes = $_POST['notes'] ?? '';
+                $items = $_POST['items'] ?? [];
+                $userId = auth();
+                
+                if (empty($items)) {
+                    Flash::error('Debe agregar al menos un producto');
+                    header('Location: ?page=quotes&action=new');
+                    exit;
+                }
+                
+                $subtotal = 0;
+                foreach ($items as $item) {
+                    $qty = intval($item['qty'] ?? 1);
+                    $price = floatval($item['price'] ?? 0);
+                    $subtotal += $price * $qty;
+                }
+                
+                $discountAmount = $subtotal * ($discount / 100);
+                $total = $subtotal - $discountAmount;
+                $expiresAt = date('Y-m-d', strtotime("+{$validityDays} days"));
+                
+                if (isset($_POST['quote_id'])) {
+                    $quoteId = intval($_POST['quote_id']);
+                    
+                    $stmt = db()->prepare("UPDATE quotes SET client_id = ?, validity_days = ?, discount = ?, notes = ?, expires_at = ?, subtotal = ?, total = ? WHERE id = ?");
+                    $stmt->execute([$clientId, $validityDays, $discountAmount, $notes, $expiresAt, $subtotal, $total, $quoteId]);
+                    
+                    $stmt = db()->prepare("DELETE FROM quote_details WHERE quote_id = ?");
+                    $stmt->execute([$quoteId]);
+                } else {
+                    $clientName = '';
+                    $clientDocument = '';
+                    if ($clientId) {
+                        $stmtClient = db()->prepare("SELECT name, document FROM clients WHERE id = ?");
+                        $stmtClient->execute([$clientId]);
+                        $clientData = $stmtClient->fetch(PDO::FETCH_ASSOC);
+                        $clientName = $clientData['name'];
+                        $clientDocument = $clientData['document'];
+                    }
+                    
+                    $stmt = db()->prepare("INSERT INTO quotes (client_id, client_name, client_document, user_id, validity_days, discount, notes, expires_at, subtotal, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))");
+                    $stmt->execute([$clientId, $clientName, $clientDocument, $userId, $validityDays, $discountAmount, $notes, $expiresAt, $subtotal, $total]);
+                    $quoteId = db()->lastInsertId();
+                }
+                
+                foreach ($items as $productId => $item) {
+                    $qty = intval($item['qty'] ?? 1);
+                    $price = floatval($item['price'] ?? 0);
+                    $itemSubtotal = $price * $qty;
+                    
+                    $stmtDetail = db()->prepare("INSERT INTO quote_details (quote_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)");
+                    $stmtDetail->execute([$quoteId, $productId, $qty, $price, $itemSubtotal]);
+                }
+                
+                Flash::success('Cotización guardada correctamente');
+                header('Location: ?page=quotes&action=view&id=' . $quoteId);
+                exit;
+            } catch (Exception $e) {
+                Flash::error('Error al guardar: ' . $e->getMessage());
+                header('Location: ?page=quotes&action=new');
+                exit;
+            }
+        }
+        header('Location: ?page=quotes');
+        exit;
+        
+case 'sale_products':
+        $saleId = intval($_GET['sale_id'] ?? 0);
+        $products = db()->prepare("SELECT sd.*, p.name, p.code FROM sale_details sd JOIN products p ON sd.product_id = p.id WHERE sd.sale_id = ?");
+        $products->execute([$saleId]);
+        $products = $products->fetchAll(PDO::FETCH_ASSOC);
+        header('Content-Type: application/json');
+        echo json_encode($products);
+        exit;
+        
+    case 'credit_notes':
+        if ($action === 'new') {
+            $sales = db()->query("SELECT s.*, c.name as client_name FROM sales s LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+            view('credit_notes/edit', compact('sales'));
+            break;
+        }
+        
+        if ($action === 'view' && isset($_GET['id'])) {
+            $cn_id = intval($_GET['id']);
+            $cn = db()->prepare("SELECT cn.*, c.name as client_name, u.name as user_name, s.id as sale_num FROM credit_notes cn LEFT JOIN clients c ON cn.client_id = c.id LEFT JOIN users u ON cn.user_id = u.id LEFT JOIN sales s ON cn.sale_id = s.id WHERE cn.id = ?");
+            $cn->execute([$cn_id]);
+            $cn = $cn->fetch(PDO::FETCH_ASSOC);
+            
+            $details = db()->prepare("SELECT cnd.*, p.name, p.code FROM credit_note_details cnd JOIN products p ON cnd.product_id = p.id WHERE cnd.credit_note_id = ?");
+            $details->execute([$cn_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            view('credit_notes/view', compact('cn', 'details'));
+            break;
+        }
+        
+        if ($action === 'apply' && isset($_GET['id'])) {
+            $cn_id = intval($_GET['id']);
+            $cn = db()->prepare("SELECT * FROM credit_notes WHERE id = ?");
+            $cn->execute([$cn_id]);
+            $cn = $cn->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$cn || $cn['status'] !== 'pending') {
+                Flash::error('No se puede aplicar esta nota de crédito');
+                header('Location: ?page=credit_notes');
+                exit;
+            }
+            
+            $details = db()->prepare("SELECT * FROM credit_note_details WHERE credit_note_id = ?");
+            $details->execute([$cn_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($details as $item) {
+                $stmtStock = db()->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+                $stmtStock->execute([$item['quantity'], $item['product_id']]);
+                
+                $stmtMove = db()->prepare("INSERT INTO stock_movements (product_id, type, quantity, reference_type, reference_id, notes) VALUES (?, 'entrada', ?, 'credit_note', ?, 'Devolución por nota de crédito')");
+                $stmtMove->execute([$item['product_id'], $item['quantity'], $cn_id]);
+            }
+            
+            if ($cn['client_id']) {
+                $stmtClient = db()->prepare("UPDATE clients SET balance = balance - ? WHERE id = ?");
+                $stmtClient->execute([$cn['total'], $cn['client_id']]);
+            }
+            
+            $stmt = db()->prepare("UPDATE credit_notes SET status = 'applied' WHERE id = ?");
+            $stmt->execute([$cn_id]);
+            
+            Flash::success('Nota de crédito aplicada. Stock reintegrado.');
+            header('Location: ?page=credit_notes&action=view&id=' . $cn_id);
+            exit;
+        }
+        
+        if ($action === 'cancel' && isset($_GET['id'])) {
+            $cn_id = intval($_GET['id']);
+            $stmt = db()->prepare("UPDATE credit_notes SET status = 'cancelled' WHERE id = ?");
+            $stmt->execute([$cn_id]);
+            Flash::success('Nota de crédito anulada');
+            header('Location: ?page=credit_notes');
+            exit;
+        }
+        
+        view('credit_notes/index');
+        break;
+        
+    case 'credit_notes_save':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $saleId = intval($_POST['sale_id'] ?? 0);
+                $reason = $_POST['reason'] ?? '';
+                $items = $_POST['items'] ?? [];
+                $userId = auth();
+                
+                if (!$saleId || empty($reason)) {
+                    Flash::error('Debe seleccionar una venta y especificar el motivo');
+                    header('Location: ?page=credit_notes&action=new');
+                    exit;
+                }
+                
+                if (empty($items)) {
+                    Flash::error('Debe seleccionar al menos un producto');
+                    header('Location: ?page=credit_notes&action=new');
+                    exit;
+                }
+                
+                $stmtSale = db()->prepare("SELECT * FROM sales WHERE id = ?");
+                $stmtSale->execute([$saleId]);
+                $sale = $stmtSale->fetch(PDO::FETCH_ASSOC);
+                
+                $subtotal = 0;
+                foreach ($items as $item) {
+                    $qty = intval($item['qty'] ?? 1);
+                    $price = floatval($item['price'] ?? 0);
+                    $subtotal += $price * $qty;
+                }
+                
+                $stmt = db()->prepare("INSERT INTO credit_notes (sale_id, user_id, client_id, reason, subtotal, total, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))");
+                $stmt->execute([$saleId, $userId, $sale['client_id'], $reason, $subtotal, $subtotal]);
+                $cnId = db()->lastInsertId();
+                
+                foreach ($items as $productId => $item) {
+                    $qty = intval($item['qty'] ?? 1);
+                    $price = floatval($item['price'] ?? 0);
+                    $itemSubtotal = $price * $qty;
+                    
+                    $stmtDetail = db()->prepare("INSERT INTO credit_note_details (credit_note_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)");
+                    $stmtDetail->execute([$cnId, $productId, $qty, $price, $itemSubtotal]);
+                }
+                
+                Flash::success('Nota de crédito creada correctamente');
+                header('Location: ?page=credit_notes&action=view&id=' . $cnId);
+                exit;
+            } catch (Exception $e) {
+                Flash::error('Error al crear: ' . $e->getMessage());
+                header('Location: ?page=credit_notes&action=new');
+                exit;
+            }
+        }
+        header('Location: ?page=credit_notes');
+        exit;
+        
+    case 'purchases':
+        if ($action === 'new' || $action === 'edit') {
+            $providers = db()->query("SELECT * FROM providers WHERE active = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+            $products = db()->query("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.active = 1 ORDER BY p.name")->fetchAll(PDO::FETCH_ASSOC);
+            
+            $edit_purchase = null;
+            $purchase_details = [];
+            if ($action === 'edit' && isset($_GET['id'])) {
+                $edit_purchase_id = intval($_GET['id']);
+                $edit_purchase = db()->prepare("SELECT * FROM purchases WHERE id = ?");
+                $edit_purchase->execute([$edit_purchase_id]);
+                $edit_purchase = $edit_purchase->fetch(PDO::FETCH_ASSOC);
+                
+                $purchase_details = db()->prepare("SELECT pd.*, p.name, p.code FROM purchase_details pd JOIN products p ON pd.product_id = p.id WHERE pd.purchase_id = ?");
+                $purchase_details->execute([$edit_purchase_id]);
+                $purchase_details = $purchase_details->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            view('purchases/edit', compact('providers', 'products', 'edit_purchase', 'purchase_details'));
+            break;
+        }
+        
+        if ($action === 'view' && isset($_GET['id'])) {
+            $purchase_id = intval($_GET['id']);
+            $purchase = db()->prepare("SELECT p.*, pr.name as provider_name, u.name as user_name FROM purchases p LEFT JOIN providers pr ON p.provider_id = pr.id LEFT JOIN users u ON p.user_id = u.id WHERE p.id = ?");
+            $purchase->execute([$purchase_id]);
+            $purchase = $purchase->fetch(PDO::FETCH_ASSOC);
+            
+            $details = db()->prepare("SELECT pd.*, p.name, p.code FROM purchase_details pd JOIN products p ON pd.product_id = p.id WHERE pd.purchase_id = ?");
+            $details->execute([$purchase_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            view('purchases/view', compact('purchase', 'details'));
+            break;
+        }
+        
+        if ($action === 'receive' && isset($_GET['id'])) {
+            $purchase_id = intval($_GET['id']);
+            $purchase = db()->prepare("SELECT * FROM purchases WHERE id = ?");
+            $purchase->execute([$purchase_id]);
+            $purchase = $purchase->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$purchase || $purchase['status'] !== 'pending') {
+                Flash::error('No se puede recibir esta compra');
+                header('Location: ?page=purchases');
+                exit;
+            }
+            
+            $details = db()->prepare("SELECT * FROM purchase_details WHERE purchase_id = ?");
+            $details->execute([$purchase_id]);
+            $details = $details->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($details as $item) {
+                $stmtStock = db()->prepare("UPDATE products SET stock = stock + ?, cost_price = ? WHERE id = ?");
+                $stmtStock->execute([$item['quantity'], $item['unit_cost'], $item['product_id']]);
+                
+                $stmtMove = db()->prepare("INSERT INTO stock_movements (product_id, type, quantity, reference_type, reference_id, notes) VALUES (?, 'entrada', ?, 'purchase', ?, 'Entrada por compra')");
+                $stmtMove->execute([$item['product_id'], $item['quantity'], $purchase_id]);
+            }
+            
+            $stmt = db()->prepare("UPDATE purchases SET status = 'received' WHERE id = ?");
+            $stmt->execute([$purchase_id]);
+            
+            Flash::success('Compra recibida. Stock actualizado.');
+            header('Location: ?page=purchases&action=view&id=' . $purchase_id);
+            exit;
+        }
+        
+        view('purchases/index');
+        break;
+        
+    case 'purchases_save':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $providerId = intval($_POST['provider_id'] ?? 0);
+                $invoiceNumber = $_POST['invoice_number'] ?? '';
+                $paymentMethod = $_POST['payment_method'] ?? 'contado';
+                $items = $_POST['items'] ?? [];
+                $userId = auth();
+                
+                if (!$providerId) {
+                    Flash::error('Debe seleccionar un proveedor');
+                    header('Location: ?page=purchases&action=new');
+                    exit;
+                }
+                
+                if (empty($items)) {
+                    Flash::error('Debe agregar al menos un producto');
+                    header('Location: ?page=purchases&action=new');
+                    exit;
+                }
+                
+                $subtotal = 0;
+                foreach ($items as $item) {
+                    $qty = intval($item['qty'] ?? 1);
+                    $cost = floatval($item['cost'] ?? 0);
+                    $subtotal += $cost * $qty;
+                }
+                
+                $stmt = db()->prepare("INSERT INTO purchases (provider_id, user_id, invoice_number, subtotal, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))");
+                $stmt->execute([$providerId, $userId, $invoiceNumber, $subtotal, $paymentMethod]);
+                $purchaseId = db()->lastInsertId();
+                
+                foreach ($items as $productId => $item) {
+                    $qty = intval($item['qty'] ?? 1);
+                    $cost = floatval($item['cost'] ?? 0);
+                    $itemSubtotal = $cost * $qty;
+                    
+                    $stmtDetail = db()->prepare("INSERT INTO purchase_details (purchase_id, product_id, quantity, unit_cost, subtotal) VALUES (?, ?, ?, ?, ?)");
+                    $stmtDetail->execute([$purchaseId, $productId, $qty, $cost, $itemSubtotal]);
+                }
+                
+                Flash::success('Compra registrada correctamente');
+                header('Location: ?page=purchases&action=view&id=' . $purchaseId);
+                exit;
+            } catch (Exception $e) {
+                Flash::error('Error al guardar: ' . $e->getMessage());
+                header('Location: ?page=purchases&action=new');
+                exit;
+            }
+        }
+        header('Location: ?page=purchases');
+        exit;
+        
+    case 'cash':
+        if ($action === 'open' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $openingAmount = floatval($_POST['opening_amount'] ?? 0);
+            $openingNotes = $_POST['opening_notes'] ?? '';
+            $userId = auth();
+            
+            if ($openingAmount < 0) {
+                Flash::error('El monto debe ser positivo');
+                header('Location: ?page=cash');
+                exit;
+            }
+            
+            $stmt = db()->prepare("INSERT INTO cash_register (user_id, opening_amount, opening_notes, status, opened_at) VALUES (?, ?, ?, 'open', datetime('now'))");
+            $stmt->execute([$userId, $openingAmount, $openingNotes]);
+            
+            Flash::success('Caja abierta con: ' . Format::money($openingAmount));
+            header('Location: ?page=cash');
+            exit;
+        }
+        
+        if ($action === 'movement' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $type = $_POST['type'] ?? 'in';
+            $amount = floatval($_POST['amount'] ?? 0);
+            $description = $_POST['description'] ?? '';
+            $userId = auth();
+            
+            $cashRegister = db()->query("SELECT id FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$cashRegister) {
+                Flash::error('No hay caja abierta');
+                header('Location: ?page=cash');
+                exit;
+            }
+            
+            $stmt = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$cashRegister['id'], $userId, $type, $amount, $description]);
+            
+            Flash::success('Movimiento registrado');
+            header('Location: ?page=cash');
+            exit;
+        }
+        
+        if ($action === 'close' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $closingAmount = floatval($_POST['closing_amount'] ?? 0);
+            $closingNotes = $_POST['closing_notes'] ?? '';
+            $userId = auth();
+            
+            $cashRegister = db()->query("SELECT * FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$cashRegister) {
+                Flash::error('No hay caja abierta');
+                header('Location: ?page=cash');
+                exit;
+            }
+            
+            $movements = db()->query("SELECT SUM(CASE WHEN type = 'in' THEN amount ELSE 0 END) as total_in, SUM(CASE WHEN type = 'out' THEN amount ELSE 0 END) as total_out FROM cash_movements WHERE cash_register_id = " . $cashRegister['id'])->fetch(PDO::FETCH_ASSOC);
+            
+            $expected = $cashRegister['opening_amount'] + ($movements['total_in'] ?? 0) - ($movements['total_out'] ?? 0);
+            $difference = $closingAmount - $expected;
+            
+            $stmt = db()->prepare("UPDATE cash_register SET closing_amount = ?, closing_notes = ?, expected_amount = ?, difference = ?, status = 'closed', closed_at = datetime('now') WHERE id = ?");
+            $stmt->execute([$closingAmount, $closingNotes, $expected, $difference, $cashRegister['id']]);
+            
+            Flash::success('Caja cerrada. Diferencia: ' . Format::money($difference));
+            header('Location: ?page=cash');
+            exit;
+        }
+        
+        view('cash/index');
+        break;
+        
+    case 'backup':
+        include dirname(__DIR__) . '/views/backup/index.php';
+        break;
+        
+    case 'backup_create':
+        try {
+            $backupDir = dirname(__DIR__) . '/data/backups';
+            if (!is_dir($backupDir)) {
+                mkdir($backupDir, 0777, true);
+            }
+            
+            $backupFile = $backupDir . '/ferretpro_backup_' . date('Y-m-d_His') . '.sqlite';
+            copy(dirname(__DIR__) . '/data/ferretpro.db', $backupFile);
+            
+            $stmt = db()->prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+            $stmt->execute(['last_backup', date('Y-m-d H:i:s')]);
+            
+            header('Location: ?page=backup&success=Backup guardado: ' . basename($backupFile));
+            exit;
+        } catch (Exception $e) {
+            header('Location: ?page=backup&error=Error: ' . $e->getMessage());
+            exit;
+        }
+        break;
+        
     case 'users':
         // Solo admin puede gestionar usuarios
         if (user()['role'] !== 'admin') {
