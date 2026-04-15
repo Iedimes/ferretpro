@@ -168,6 +168,11 @@ if ($page === 'reset_password_post' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+if ($page === 'test_simple') {
+    include dirname(__DIR__) . '/views/test_simple.php';
+    exit;
+}
+
 if ($page === 'test_modules') {
     include dirname(__DIR__) . '/views/test_modules.php';
     exit;
