@@ -8,11 +8,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         :root { --primary: #2563eb; --dark: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; }
-        .sidebar { width: 250px; background: var(--dark); min-height: 100vh; position: fixed; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--dark); min-height: 100vh; position: fixed; overflow-y: auto; }
         .sidebar .nav-link { color: #94a3b8; padding: 12px 20px; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #334155; color: white; }
-        .main-content { margin-left: 250px; padding: 20px; }
+        .main-content { margin-left: 250px; padding: 20px; min-height: 100vh; }
         .card { border: none; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .stat-card { border-left: 4px solid; }
     </style>
@@ -39,8 +39,6 @@
             <a class="nav-link" href="?page=categories">Categorías</a>
             <a class="nav-link" href="?page=reports">Reportes</a>
             <a class="nav-link" href="?page=backup">Backup</a>
-            <a class="nav-link" href="?page=test_caja" style="color: var(--info);">Test Caja</a>
-            <a class="nav-link" href="?page=test_data" style="color: var(--info);">Test Data</a>
             <a class="nav-link" href="?page=users">Usuarios</a>
             <a class="nav-link" href="?page=settings">Configuración</a>
             <a class="nav-link" href="?page=logout">Salir</a>
