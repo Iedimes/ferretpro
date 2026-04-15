@@ -998,6 +998,10 @@ case 'sale_products':
         include dirname(__DIR__) . '/views/backup/index.php';
         break;
         
+    case 'test_data':
+        include dirname(__DIR__) . '/views/test_data.php';
+        break;
+        
     case 'backup_create':
         try {
             $backupDir = dirname(__DIR__) . '/data/backups';
