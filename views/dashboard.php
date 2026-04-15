@@ -90,6 +90,48 @@ if (!empty($overdueReceivables)) {
 </div>';
 }
 
+if (!empty($overduePayables)) {
+    $content .= '
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Cuentas por Pagar Vencidas</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Proveedor</th>
+                            <th>Compra</th>
+                            <th>Monto</th>
+                            <th>Vencimiento</th>
+                            <th>Días Vencido</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
+    foreach ($overduePayables as $pay) {
+        $dueDate = new DateTime($pay['due_date']);
+        $today = new DateTime();
+        $daysOverdue = $today->diff($dueDate)->days;
+        
+        $content .= '<tr>
+            <td><strong>' . htmlspecialchars($pay['provider_name']) . '</strong></td>
+            <td>#' . $pay['purchase_id'] . '</td>
+            <td>' . Format::money($pay['amount']) . '</td>
+            <td>' . Format::date($pay['due_date']) . '</td>
+            <td><span class="badge bg-danger">' . $daysOverdue . ' días</span></td>
+            <td><a href="?page=payable" class="btn btn-sm btn-warning">Pagar</a></td>
+        </tr>';
+    }
+    $content .= '</tbody>
+            </table>
+        </div>
+    </div>
+</div>';
+}
+
 $content .= '
 
 <div class="row">

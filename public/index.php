@@ -204,7 +204,17 @@ switch ($page) {
             LIMIT 10
         ")->fetchAll(PDO::FETCH_ASSOC);
         
-        view('dashboard', compact('salesToday', 'productsLow', 'clientsDebt', 'salesMonth', 'recentSales', 'overdueReceivables'));
+        // Cuentas por pagar vencidas
+        $overduePayables = db()->query("
+            SELECT ap.*, p.name as provider_name
+            FROM accounts_payable ap
+            JOIN providers p ON ap.provider_id = p.id
+            WHERE ap.status = 'pendiente' AND DATE(ap.due_date) <= DATE('now')
+            ORDER BY ap.due_date ASC
+            LIMIT 10
+        ")->fetchAll(PDO::FETCH_ASSOC);
+        
+        view('dashboard', compact('salesToday', 'productsLow', 'clientsDebt', 'salesMonth', 'recentSales', 'overdueReceivables', 'overduePayables'));
         break;
         
     case 'pos':
