@@ -41,8 +41,66 @@ if (count($accounts) == 0) {
             <td>' . Format::money($ac['amount']) . '</td>
             <td>' . Format::date($ac['due_date']) . '</td>
             <td><span class="badge bg-' . $statusClass . '">' . $statusLabel . '</span></td>
-            <td>' . ($ac['status'] === 'pendiente' ? '<a href="?page=payable&action=pay&id=' . $ac['id'] . '" class="btn btn-sm btn-success" onclick="return confirm(\'Marcar como pagado?\')">Pagar</a>' : '-') . '</td>
+            <td>' . ($ac['status'] === 'pendiente' ? '<button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#payModal' . $ac['id'] . '">Pagar</button>' : '-') . '</td>
         </tr>';
+        
+        if ($ac['status'] === 'pendiente') {
+            $content .= '
+    <div class="modal fade" id="payModal' . $ac['id'] . '" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pagar Cuenta #' . $ac['id'] . '</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="?page=payable&action=pay&id=' . $ac['id'] . '">
+                    <div class="modal-body">
+                        <p><strong>Proveedor:</strong> ' . htmlspecialchars($ac['provider_name']) . '</p>
+                        <p><strong>Monto:</strong> ' . Format::money($ac['amount']) . '</p>
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pago</label>
+                            <select name="payment_method" class="form-select" required>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cuenta de Origen</label>
+                            <select name="cuenta" class="form-select" required>
+                                <option value="caja">Caja Física</option>
+                                <option value="banco">Banco</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Banco Origen</label>
+                            <input type="text" name="banco_origen" class="form-control" placeholder="Ej: Banco Continental">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Banco Destino</label>
+                            <input type="text" name="banco_destino" class="form-control" placeholder="Ej: Banco del Paraguay">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">N° Cuenta Destino</label>
+                            <input type="text" name="cuenta_destino" class="form-control" placeholder="N° de cuenta">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">N° de Transacción</label>
+                            <input type="text" name="referencia" class="form-control" placeholder="N° de operación">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notas</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Confirmar Pago</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>';
+        }
     }
 }
 

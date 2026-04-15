@@ -259,7 +259,7 @@ switch ($page) {
         break;
         
     case 'payable':
-        if ($action === 'pay' && isset($_GET['id'])) {
+        if ($action === 'pay' && isset($_GET['id']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $ap_id = intval($_GET['id']);
             $ap = db()->prepare("SELECT * FROM accounts_payable WHERE id = ?");
             $ap->execute([$ap_id]);
@@ -271,12 +271,28 @@ switch ($page) {
                 exit;
             }
             
-            $stmt = db()->prepare("UPDATE accounts_payable SET status = 'pagado', paid_amount = amount WHERE id = ?");
-            $stmt->execute([$ap_id]);
+            $paymentMethod = $_POST['payment_method'] ?? 'efectivo';
+            $cuenta = $_POST['cuenta'] ?? 'caja';
+            $bancoOrigen = $_POST['banco_origen'] ?? '';
+            $bancoDestino = $_POST['banco_destino'] ?? '';
+            $cuentaDestino = $_POST['cuenta_destino'] ?? '';
+            $referencia = $_POST['referencia'] ?? '';
+            $notes = $_POST['notes'] ?? '';
+            
+            $notesFull = trim($bancoOrigen . ' -> ' . $bancoDestino . ' ' . $cuentaDestino . ' Ref: ' . $referencia . ' ' . $notes);
+            
+            $stmt = db()->prepare("UPDATE accounts_payable SET status = 'pagado', paid_amount = amount, notes = ? WHERE id = ?");
+            $stmt->execute([$notesFull, $ap_id]);
             
             if ($ap['purchase_id']) {
                 $stmtPurchase = db()->prepare("UPDATE purchases SET status = 'paid' WHERE id = ?");
                 $stmtPurchase->execute([$ap['purchase_id']]);
+            }
+            
+            $cashRegister = db()->query("SELECT id FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            if ($cashRegister) {
+                $stmtCash = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description, payment_method, cuenta, referencia) VALUES (?, ?, 'out', ?, ?, ?, ?, ?)");
+                $stmtCash->execute([$cashRegister['id'], auth(), $ap['amount'], 'Pago CxP #' . $ap_id, $paymentMethod, $cuenta, $referencia]);
             }
             
             Flash::success('Cuenta pagada');
