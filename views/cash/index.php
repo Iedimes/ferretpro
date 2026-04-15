@@ -52,7 +52,7 @@ if (!$cashRegister) {
                 <button type="submit" class="btn btn-primary">Abrir Caja</button>
             </form>
         </div>
-    </div>';
+        </div>';
 } else {
     $movements = db()->query("
         SELECT cm.*, u.name as user_name
@@ -81,38 +81,37 @@ if (!$cashRegister) {
     }
     
     $content .= '
-    <div class="row mb-3">
-        <div class="col-md-12">
-            <div class="alert alert-info">
-                <strong>Caja Abierta</strong> - Usuario: ' . htmlspecialchars($cashRegister['user_name']) . ' | 
-                Apertura: ' . Format::money($cashRegister['opening_amount']) . ' | 
-                Esperado: ' . Format::money($expected) . '
-            </div>
-        </div>
-    </div>
-    
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card mb-3">
-                <div class="card-body text-center">
-                    <h3 class="text-success">' . Format::money($totalIn) . '</h3>
-                    <p class="text-muted mb-0">Entradas</p>
+                <div class="card-body text-center position-relative">
+                    <h4>' . Format::money($cashRegister['opening_amount']) . '</h4>
+                    <p class="text-muted mb-0">Apertura</p>
+                    <a href="?page=cash&action=edit_open&id=' . $cashRegister['id'] . '" class="position-absolute top-0 end-0 btn btn-sm btn-outline-secondary" style="font-size:10px;padding:2px 6px;">Editar</a>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card mb-3">
                 <div class="card-body text-center">
-                    <h3 class="text-danger">' . Format::money($totalOut) . '</h3>
-                    <p class="text-muted mb-0">Salidas</p>
+                    <h4 class="text-success">' . Format::money($totalIn) . '</h4>
+                    <p class="text-muted mb-0">+ Entradas</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card mb-3">
                 <div class="card-body text-center">
-                    <h3>' . Format::money($expected) . '</h3>
-                    <p class="text-muted mb-0">Esperado</p>
+                    <h4 class="text-danger">' . Format::money($totalOut) . '</h4>
+                    <p class="text-muted mb-0">- Salidas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-3">
+                <div class="card-body text-center">
+                    <h4 class="text-primary">' . Format::money($expected) . '</h4>
+                    <p class="text-muted mb-0">= Esperado</p>
                 </div>
             </div>
         </div>
@@ -172,28 +171,28 @@ if (!$cashRegister) {
                             <input type="number" name="amount" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Método</label>
-                            <select name="payment_method" class="form-select" required>
+                            <label class="form-label">Descripción</label>
+                            <input type="text" name="description" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pago</label>
+                            <select name="payment_method" class="form-select">
                                 <option value="efectivo">Efectivo</option>
                                 <option value="transferencia">Transferencia</option>
-                                <option value="qr">QR</option>
                                 <option value="tarjeta">Tarjeta</option>
+                                <option value="qr">QR</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cuenta</label>
-                            <select name="cuenta" class="form-select" required>
+                            <select name="cuenta" class="form-select">
                                 <option value="caja">Caja Física</option>
                                 <option value="banco">Banco</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Referencia ( opcional)</label>
-                            <input type="text" name="referencia" class="form-control" placeholder="N° transferencia, operación">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Descripción</label>
-                            <input type="text" name="description" class="form-control">
+                            <label class="form-label">Referencia</label>
+                            <input type="text" name="referencia" class="form-control">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -213,9 +212,21 @@ if (!$cashRegister) {
                 </div>
                 <form method="POST" action="?page=cash&action=close">
                     <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col">
+                                <div class="alert alert-info mb-0">
+                                    <strong>Esperado:</strong> ' . Format::money($expected) . '
+                                </div>
+                            </div>
+                        </div>
                         <div class="mb-3">
                             <label class="form-label">Monto Final en Caja (Gs.)</label>
-                            <input type="number" name="closing_amount" class="form-control" required>
+                            <input type="number" name="closing_amount" id="closingAmount" class="form-control" value="' . $expected . '" required oninput="calcularDiferencia()">
+                        </div>
+                        <div class="mb-3">
+                            <div class="alert" id="diferenciaAlert">
+                                <strong>Diferencia:</strong> <span id="diferenciaDisplay">0</span>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Observaciones</label>
@@ -228,7 +239,29 @@ if (!$cashRegister) {
                 </form>
             </div>
         </div>
-    </div>';
+    </div>
+    <script>
+    function calcularDiferencia() {
+        var esperado = ' . $expected . ';
+        var cierre = parseFloat(document.getElementById("closingAmount").value) || 0;
+        var diff = cierre - esperado;
+        var display = document.getElementById("diferenciaDisplay");
+        var alert = document.getElementById("diferenciaAlert");
+        
+        display.textContent = diff.toLocaleString("es-PY");
+        
+        if (diff === 0) {
+            alert.className = "alert alert-success mb-0";
+        } else if (diff > 0) {
+            alert.className = "alert alert-success mb-0";
+            display.textContent = "+" + display.textContent + " (Sobró)";
+        } else {
+            alert.className = "alert alert-warning mb-0";
+            display.textContent = display.textContent + " (Faltó)";
+        }
+    }
+    calcularDiferencia();
+    </script>';
 }
 
 // Historial de cajas cerradas
@@ -241,40 +274,47 @@ $closedRegisters = db()->query("
     LIMIT 30
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-if ($lastClosed) {
+if ($closedRegisters) {
     $content .= '
     <div class="card mt-3">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Historial de Cajas</h5>
+            <small class="text-muted">Click en una fila para ver movimientos</small>
         </div>
         <div class="card-body p-0">
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Fecha Apertura</th>
-                        <th>Fecha Cierre</th>
+                        <th>Fecha</th>
                         <th>Usuario</th>
                         <th>Apertura</th>
+                        <th>Entradas</th>
+                        <th>Salidas</th>
+                        <th>Esperado</th>
                         <th>Cierre</th>
                         <th>Diferencia</th>
                     </tr>
                 </thead>
                 <tbody>';
     
-    if (count($closedRegisters) == 0) {
-        $content .= '<tr><td colspan="6" class="text-center">No hay cajas cerradas</td></tr>';
-    } else {
-        foreach ($closedRegisters as $cr) {
-            $diffClass = $cr['difference'] > 0 ? 'text-success' : ($cr['difference'] < 0 ? 'text-danger' : '');
-            $content .= '<tr>
-                <td>' . Format::date($cr['opened_at']) . '</td>
-                <td>' . Format::date($cr['closed_at']) . '</td>
-                <td>' . htmlspecialchars($cr['user_name']) . '</td>
-                <td>' . Format::money($cr['opening_amount']) . '</td>
-                <td>' . Format::money($cr['closing_amount'] ?? 0) . '</td>
-                <td class="' . $diffClass . '"><strong>' . Format::money($cr['difference'] ?? 0) . '</strong></td>
-            </tr>';
-        }
+    foreach ($closedRegisters as $cr) {
+        $movs = db()->query("SELECT SUM(CASE WHEN type = 'in' THEN amount ELSE 0 END) as tin, SUM(CASE WHEN type = 'out' THEN amount ELSE 0 END) as tout FROM cash_movements WHERE cash_register_id = " . $cr['id'])->fetch(PDO::FETCH_ASSOC);
+        $tin = $movs['tin'] ?? 0;
+        $tout = $movs['tout'] ?? 0;
+        $exp = $cr['opening_amount'] + $tin - $tout;
+        $diffCalc = ($cr['closing_amount'] ?? 0) - $cr['opening_amount'];
+        $diffClass = $diffCalc > 0 ? 'text-success' : ($diffCalc < 0 ? 'text-danger' : '');
+        
+        $content .= '<tr style="cursor:pointer" onclick="window.location.href=\'?page=cash&action=view&id=' . $cr['id'] . '\'">
+            <td>' . Format::date($cr['opened_at']) . '</td>
+            <td>' . htmlspecialchars($cr['user_name']) . '</td>
+            <td>' . Format::money($cr['opening_amount']) . '</td>
+            <td class="text-success">' . Format::money($tin) . '</td>
+            <td class="text-danger">' . Format::money($tout) . '</td>
+            <td>' . Format::money($exp) . '</td>
+            <td>' . Format::money($cr['closing_amount'] ?? 0) . '</td>
+            <td class="' . $diffClass . '"><strong>' . Format::money($diffCalc) . '</strong></td>
+        </tr>';
     }
     
     $content .= '</tbody>

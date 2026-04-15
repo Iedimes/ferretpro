@@ -950,6 +950,40 @@ case 'sale_products':
             exit;
         }
         
+        if ($action === 'cancel' && !empty($_GET['id'])) {
+            $id = intval($_GET['id']);
+            $stmt = db()->prepare("DELETE FROM cash_movements WHERE cash_register_id = ?");
+            $stmt->execute([$id]);
+            $stmt = db()->prepare("DELETE FROM cash_register WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            Flash::success('Caja cancelada');
+            header('Location: ?page=cash');
+            exit;
+        }
+        
+        if ($action === 'edit_open' && !empty($_GET['id']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_GET['id']);
+            $openingAmount = floatval($_POST['opening_amount'] ?? 0);
+            $openingNotes = $_POST['opening_notes'] ?? '';
+            
+            $stmt = db()->prepare("UPDATE cash_register SET opening_amount = ?, opening_notes = ? WHERE id = ? AND status = 'open'");
+            $stmt->execute([$openingAmount, $openingNotes, $id]);
+            
+            Flash::success('Apertura actualizada');
+            header('Location: ?page=cash');
+            exit;
+        }
+        
+        if ($action === 'edit_open' && !empty($_GET['id'])) {
+            $id = intval($_GET['id']);
+            $cr = db()->query("SELECT * FROM cash_register WHERE id = $id AND status = 'open'")->fetch(PDO::FETCH_ASSOC);
+            if ($cr) {
+                view('cash/edit_open', compact('cr'));
+                break;
+            }
+        }
+        
         if ($action === 'movement' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $type = $_POST['type'] ?? 'in';
             $amount = floatval($_POST['amount'] ?? 0);
@@ -999,6 +1033,11 @@ case 'sale_products':
             Flash::success('Caja cerrada. Diferencia: ' . Format::money($difference));
             header('Location: ?page=cash');
             exit;
+        }
+        
+        if ($action === 'view' && !empty($_GET['id'])) {
+            view('cash/view');
+            break;
         }
         
         view('cash/index');
