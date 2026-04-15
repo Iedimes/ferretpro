@@ -173,6 +173,12 @@ if ($page === 'test_data') {
     exit;
 }
 
+
+if ($page === 'test_modules') {
+    include dirname(__DIR__) . '/views/test_modules.php';
+    exit;
+}
+
 if ($page === 'test_caja') {
     include dirname(__DIR__) . '/views/test_caja.php';
     exit;
