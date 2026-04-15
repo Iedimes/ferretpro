@@ -39,6 +39,7 @@
             <a class="nav-link" href="?page=categories">Categorías</a>
             <a class="nav-link" href="?page=reports">Reportes</a>
             <a class="nav-link" href="?page=backup">Backup</a>
+            <a class="nav-link" href="?page=test_caja" style="color: var(--info);">Test Caja</a>
             <a class="nav-link" href="?page=test_data" style="color: var(--info);">Test Data</a>
             <a class="nav-link" href="?page=users">Usuarios</a>
             <a class="nav-link" href="?page=settings">Configuración</a>

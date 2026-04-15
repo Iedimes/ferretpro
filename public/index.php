@@ -173,6 +173,11 @@ if ($page === 'test_data') {
     exit;
 }
 
+if ($page === 'test_caja') {
+    include dirname(__DIR__) . '/views/test_caja.php';
+    exit;
+}
+
 if (!auth()) {
     header('Location: ?page=login');
     exit;
