@@ -66,6 +66,20 @@ if (!$cashRegister) {
     $totalOut = array_sum(array_map(fn($m) => $m['type'] === 'out' ? $m['amount'] : 0, $movements));
     $expected = $cashRegister['opening_amount'] + $totalIn - $totalOut;
     
+    $inCaja = 0;
+    $inBanco = 0;
+    $outCaja = 0;
+    $outBanco = 0;
+    foreach ($movements as $m) {
+        if ($m['type'] === 'in') {
+            if ($m['cuenta'] === 'caja') $inCaja += $m['amount'];
+            else $inBanco += $m['amount'];
+        } else {
+            if ($m['cuenta'] === 'caja') $outCaja += $m['amount'];
+            else $outBanco += $m['amount'];
+        }
+    }
+    
     $content .= '
     <div class="row mb-3">
         <div class="col-md-12">
@@ -114,17 +128,21 @@ if (!$cashRegister) {
         </div>
         <div class="card-body p-0">
             <table class="table mb-0">
-                <thead><tr><th>Hora</th><th>Tipo</th><th>Monto</th><th>Descripción</th><th>Usuario</th></tr></thead>
+                <thead><tr><th>Hora</th><th>Tipo</th><th>Método</th><th>Cuenta</th><th>Referencia</th><th>Monto</th><th>Descripción</th></tr></thead>
                 <tbody>';
     
     foreach ($movements as $m) {
         $typeClass = $m['type'] === 'in' ? 'success' : 'danger';
+        $methodLabel = $m['payment_method'] === 'efectivo' ? 'Efec.' : ($m['payment_method'] === 'transferencia' ? 'Transf.' : ($m['payment_method'] === 'qr' ? 'QR' : 'Tarj.'));
+        $cuentaLabel = $m['cuenta'] === 'caja' ? 'Caja' : 'Banco';
         $content .= '<tr>
             <td>' . date('H:i', strtotime($m['created_at'])) . '</td>
             <td><span class="badge bg-' . $typeClass . '">' . ($m['type'] === 'in' ? 'Entrada' : 'Salida') . '</span></td>
+            <td>' . $methodLabel . '</td>
+            <td>' . $cuentaLabel . '</td>
+            <td>' . htmlspecialchars($m['referencia'] ?? '-') . '</td>
             <td>' . Format::money($m['amount']) . '</td>
             <td>' . htmlspecialchars($m['description'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($m['user_name']) . '</td>
         </tr>';
     }
     

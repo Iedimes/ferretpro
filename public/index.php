@@ -321,6 +321,14 @@ switch ($page) {
                 
                 $stmt = db()->prepare("INSERT INTO expenses (user_id, category, description, amount, payment_method, cuenta, referencia, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))");
                 $stmt->execute([$userId, $category, $description, $amount, $paymentMethod, $cuenta, $referencia, $date]);
+                $expenseId = db()->lastInsertId();
+                
+                // Registrar automáticamente en caja
+                $cashRegister = db()->query("SELECT id FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+                if ($cashRegister) {
+                    $stmtCash = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description, payment_method, cuenta, referencia) VALUES (?, ?, 'out', ?, ?, ?, ?, ?)");
+                    $stmtCash->execute([$cashRegister['id'], $userId, $amount, 'Gasto #' . $expenseId . ' - ' . $category, $paymentMethod, $cuenta, $referencia]);
+                }
                 
                 Flash::success('Gasto registrado');
                 header('Location: ?page=expenses');
@@ -1058,6 +1066,18 @@ case 'sale_products':
                     // Actualizar balance del cliente
                     $stmtClient = db()->prepare("UPDATE clients SET balance = balance + ? WHERE id = ?");
                     $stmtClient->execute([$total, $clientId]);
+                }
+                
+                // Registrar en caja automáticamente si es venta al contado
+                if ($saleType === 'contado') {
+                    $cuenta = ($paymentMethod === 'efectivo') ? 'caja' : 'banco';
+                    $reference = 'Venta #' . $saleId;
+                    
+                    $cashRegister = db()->query("SELECT id FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+                    if ($cashRegister) {
+                        $stmtCash = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description, payment_method, cuenta, referencia) VALUES (?, ?, 'in', ?, ?, ?, ?, ?)");
+                        $stmtCash->execute([$cashRegister['id'], $userId, $total, $reference, $paymentMethod, $cuenta, $reference]);
+                    }
                 }
                 
                 Flash::success('Venta registrada correctamente. ID: ' . $saleId);
