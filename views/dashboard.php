@@ -54,21 +54,24 @@ $content = '
 if (!empty($overdueReceivables)) {
     $content .= '
 <div class="row mt-3">
-    <div class="col-12">
-        <div class="alert alert-danger">
-            <h5><i class="bi bi-exclamation-triangle-fill"></i> Alerta: Créditos Vencidos</h5>
-            <table class="table table-sm table-danger mb-0 mt-2">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Venta #</th>
-                        <th>Monto</th>
-                        <th>Vencimiento</th>
-                        <th>Días Vencido</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>';
+    <div class="col-md-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Cuentas por Cobrar</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Venta</th>
+                            <th>Monto</th>
+                            <th>Vencimiento</th>
+                            <th>Días</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
     foreach ($overdueReceivables as $rec) {
         $dueDate = new DateTime($rec['due_date']);
         $today = new DateTime();
@@ -76,10 +79,10 @@ if (!empty($overdueReceivables)) {
         
         $content .= '<tr>
             <td><strong>' . htmlspecialchars($rec['client_name']) . '</strong></td>
-            <td>' . $rec['sale_id'] . '</td>
+            <td>#' . $rec['sale_id'] . '</td>
             <td>' . Format::money($rec['amount']) . '</td>
-            <td>' . Format::date($rec['due_date']) . '</td>
-            <td><span class="badge bg-danger">' . $daysOverdue . ' días</span></td>
+            <td' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? ' style="color:red;font-weight:bold;"' : '') . '>' . Format::date($rec['due_date']) . '</td>
+            <td>' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? '<span class="badge bg-warning">' . $daysOverdue . ' días</span>' : '<span class="badge bg-danger">' . $daysOverdue . ' días</span>') . '</td>
             <td><a href="?page=receivable&action=pay&id=' . $rec['id'] . '" class="btn btn-sm btn-danger">Cobrar</a></td>
         </tr>';
     }
@@ -96,7 +99,7 @@ if (!empty($overduePayables)) {
     <div class="col-md-12">
         <div class="card border-warning">
             <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">Cuentas por Pagar Vencidas</h5>
+                <h5 class="mb-0">Cuentas por Pagar</h5>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
@@ -106,7 +109,7 @@ if (!empty($overduePayables)) {
                             <th>Compra</th>
                             <th>Monto</th>
                             <th>Vencimiento</th>
-                            <th>Días Vencido</th>
+                            <th>Días</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -120,8 +123,8 @@ if (!empty($overduePayables)) {
             <td><strong>' . htmlspecialchars($pay['provider_name']) . '</strong></td>
             <td>#' . $pay['purchase_id'] . '</td>
             <td>' . Format::money($pay['amount']) . '</td>
-            <td>' . Format::date($pay['due_date']) . '</td>
-            <td><span class="badge bg-danger">' . $daysOverdue . ' días</span></td>
+            <td' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? ' style="color:red;font-weight:bold;"' : '') . '>' . Format::date($pay['due_date']) . '</td>
+            <td>' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? '<span class="badge bg-warning">' . $daysOverdue . ' días</span>' : '<span class="badge bg-danger">' . $daysOverdue . ' días</span>') . '</td>
             <td><a href="?page=payable" class="btn btn-sm btn-warning">Pagar</a></td>
         </tr>';
     }
@@ -130,6 +133,7 @@ if (!empty($overduePayables)) {
         </div>
     </div>
 </div>';
+
 }
 
 $content .= '

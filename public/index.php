@@ -193,23 +193,23 @@ switch ($page) {
         $salesMonth = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
         $recentSales = db()->query("SELECT s.*, u.name as user_name, c.name as client_name FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
         
-        // Cuentas por cobrar vencidas
+        // Cuentas por cobrar pendientes
         $overdueReceivables = db()->query("
             SELECT ar.*, c.name as client_name, s.id as sale_id
             FROM accounts_receivable ar
             JOIN clients c ON ar.client_id = c.id
             LEFT JOIN sales s ON ar.sale_id = s.id
-            WHERE ar.status = 'pendiente' AND DATE(ar.due_date) < DATE('now')
+            WHERE ar.status = 'pendiente'
             ORDER BY ar.due_date ASC
-            LIMIT 10
+            LIMIT 15
         ")->fetchAll(PDO::FETCH_ASSOC);
         
-        // Cuentas por pagar vencidas
+        // Cuentas por pagar pendientes
         $overduePayables = db()->query("
             SELECT ap.*, p.name as provider_name
             FROM accounts_payable ap
             JOIN providers p ON ap.provider_id = p.id
-            WHERE ap.status = 'pendiente' AND DATE(ap.due_date) <= DATE('now')
+            WHERE ap.status = 'pendiente'
             ORDER BY ap.due_date ASC
             LIMIT 10
         ")->fetchAll(PDO::FETCH_ASSOC);
