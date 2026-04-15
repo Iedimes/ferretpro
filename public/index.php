@@ -196,35 +196,11 @@ $_SESSION['login_time'] = time();
 
 switch ($page) {
     case 'home':
-    case 'dashboard':
-        $salesToday = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) = DATE('now')")->fetch(PDO::FETCH_ASSOC);
-        $productsLow = db()->query("SELECT COUNT(*) FROM products WHERE stock <= min_stock AND active = 1")->fetch(PDO::FETCH_ASSOC);
-        $clientsDebt = db()->query("SELECT COUNT(*), COALESCE(SUM(balance), 0) FROM clients WHERE balance > 0")->fetch(PDO::FETCH_ASSOC);
-        $salesMonth = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
-        $recentSales = db()->query("SELECT s.*, u.name as user_name, c.name as client_name FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+        view('dashboard');
+        break;
         
-        // Cuentas por cobrar pendientes
-        $overdueReceivables = db()->query("
-            SELECT ar.*, c.name as client_name, s.id as sale_id
-            FROM accounts_receivable ar
-            JOIN clients c ON ar.client_id = c.id
-            LEFT JOIN sales s ON ar.sale_id = s.id
-            WHERE ar.status = 'pendiente'
-            ORDER BY ar.due_date ASC
-            LIMIT 15
-        ")->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Cuentas por pagar pendientes
-        $overduePayables = db()->query("
-            SELECT ap.*, p.name as provider_name
-            FROM accounts_payable ap
-            JOIN providers p ON ap.provider_id = p.id
-            WHERE ap.status = 'pendiente'
-            ORDER BY ap.due_date ASC
-            LIMIT 10
-        ")->fetchAll(PDO::FETCH_ASSOC);
-        
-        view('dashboard', compact('salesToday', 'productsLow', 'clientsDebt', 'salesMonth', 'recentSales', 'overdueReceivables', 'overduePayables'));
+    case 'test_modules':
+        include dirname(__DIR__) . '/views/test_modules.php';
         break;
         
     case 'pos':
