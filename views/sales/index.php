@@ -10,11 +10,12 @@ $sales = db()->query("
     FROM sales s 
     LEFT JOIN users u ON s.user_id = u.id 
     LEFT JOIN clients c ON s.client_id = c.id
+    WHERE DATE(s.created_at) >= '$dateFrom' AND DATE(s.created_at) <= '$dateTo'
     ORDER BY s.id DESC
     LIMIT 50
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-$totalSales = db()->query("SELECT COALESCE(SUM(total), 0) as total FROM sales")->fetch(PDO::FETCH_ASSOC);
+$totalSales = db()->query("SELECT COALESCE(SUM(total), 0) as total FROM sales WHERE DATE(created_at) >= '$dateFrom' AND DATE(created_at) <= '$dateTo'")->fetch(PDO::FETCH_ASSOC);
 
 $content = '
 <form method="GET" class="row mb-3">
