@@ -308,7 +308,8 @@ switch ($page) {
                 $description = $_POST['description'] ?? '';
                 $amount = floatval($_POST['amount'] ?? 0);
                 $paymentMethod = $_POST['payment_method'] ?? 'efectivo';
-                $reference = $_POST['reference'] ?? '';
+                $cuenta = $_POST['cuenta'] ?? 'caja';
+                $referencia = $_POST['referencia'] ?? '';
                 $date = $_POST['date'] ?? date('Y-m-d');
                 $userId = auth();
                 
@@ -318,8 +319,8 @@ switch ($page) {
                     exit;
                 }
                 
-                $stmt = db()->prepare("INSERT INTO expenses (user_id, category, description, amount, payment_method, reference, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))");
-                $stmt->execute([$userId, $category, $description, $amount, $paymentMethod, $reference, $date]);
+                $stmt = db()->prepare("INSERT INTO expenses (user_id, category, description, amount, payment_method, cuenta, referencia, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+                $stmt->execute([$userId, $category, $description, $amount, $paymentMethod, $cuenta, $referencia, $date]);
                 
                 Flash::success('Gasto registrado');
                 header('Location: ?page=expenses');
@@ -889,6 +890,9 @@ case 'sale_products':
             $type = $_POST['type'] ?? 'in';
             $amount = floatval($_POST['amount'] ?? 0);
             $description = $_POST['description'] ?? '';
+            $paymentMethod = $_POST['payment_method'] ?? 'efectivo';
+            $cuenta = $_POST['cuenta'] ?? 'caja';
+            $referencia = $_POST['referencia'] ?? '';
             $userId = auth();
             
             $cashRegister = db()->query("SELECT id FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
@@ -899,8 +903,8 @@ case 'sale_products':
                 exit;
             }
             
-            $stmt = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$cashRegister['id'], $userId, $type, $amount, $description]);
+            $stmt = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description, payment_method, cuenta, referencia) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$cashRegister['id'], $userId, $type, $amount, $description, $paymentMethod, $cuenta, $referencia]);
             
             Flash::success('Movimiento registrado');
             header('Location: ?page=cash');

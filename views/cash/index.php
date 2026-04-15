@@ -154,6 +154,26 @@ if (!$cashRegister) {
                             <input type="number" name="amount" class="form-control" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Método</label>
+                            <select name="payment_method" class="form-select" required>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="transferencia">Transferencia</option>
+                                <option value="qr">QR</option>
+                                <option value="tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cuenta</label>
+                            <select name="cuenta" class="form-select" required>
+                                <option value="caja">Caja Física</option>
+                                <option value="banco">Banco</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Referencia ( opcional)</label>
+                            <input type="text" name="referencia" class="form-control" placeholder="N° transferencia, operación">
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Descripción</label>
                             <input type="text" name="description" class="form-control">
                         </div>

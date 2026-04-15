@@ -300,6 +300,8 @@ class Database extends PDO {
                 amount REAL NOT NULL,
                 description TEXT,
                 payment_method TEXT DEFAULT 'efectivo',
+                cuenta TEXT DEFAULT 'caja',
+                referencia TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (cash_register_id) REFERENCES cash_register(id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
@@ -326,10 +328,20 @@ class Database extends PDO {
                 description TEXT,
                 amount REAL NOT NULL,
                 payment_method TEXT DEFAULT 'efectivo',
-                reference TEXT,
+                cuenta TEXT DEFAULT 'caja',
+                referencia TEXT,
                 date DATE,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS bank_accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                account_number TEXT,
+                bank_name TEXT,
+                active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         ");
         

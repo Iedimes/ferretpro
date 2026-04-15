@@ -40,17 +40,24 @@ $content = '
             </div>
             
             <div class="row mb-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Método de Pago</label>
                     <select name="payment_method" class="form-select" required>
                         <option value="efectivo">Efectivo</option>
                         <option value="transferencia">Transferencia</option>
-                        <option value="tarjeta">Tarjeta/Débito</option>
+                        <option value="tarjeta">Tarjeta</option>
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Referencia/Boleta</label>
-                    <input type="text" name="reference" class="form-control" placeholder="N° boleta, comprobante, etc.">
+                <div class="col-md-4">
+                    <label class="form-label">Cuenta</label>
+                    <select name="cuenta" class="form-select" required>
+                        <option value="caja">Caja Física</option>
+                        <option value="banco">Banco</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Referencia</label>
+                    <input type="text" name="referencia" class="form-control" placeholder="N° transferencia">
                 </div>
             </div>
             
