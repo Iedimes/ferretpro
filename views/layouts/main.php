@@ -8,11 +8,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         :root { --primary: #2563eb; --dark: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; min-height: 100vh; }
-        .sidebar { width: 250px; background: var(--dark); min-height: 100vh; position: fixed; overflow-y: auto; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; }
+        .sidebar { width: 250px; background: var(--dark); height: 100vh; position: fixed; top: 0; left: 0; overflow-y: auto; }
         .sidebar .nav-link { color: #94a3b8; padding: 12px 20px; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { background: #334155; color: white; }
-        .main-content { margin-left: 250px; padding: 20px; min-height: 100vh; }
+        .main-content { margin-left: 250px; padding: 20px; }
         .card { border: none; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .stat-card { border-left: 4px solid; }
     </style>
