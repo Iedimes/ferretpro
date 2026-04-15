@@ -785,6 +785,18 @@ case 'sale_products':
             break;
         }
         
+        if ($action === 'delete' && isset($_GET['id'])) {
+            $purchase_id = intval($_GET['id']);
+            
+            db()->prepare("DELETE FROM purchase_details WHERE purchase_id = ?")->execute([$purchase_id]);
+            db()->prepare("DELETE FROM accounts_payable WHERE purchase_id = ?")->execute([$purchase_id]);
+            db()->prepare("DELETE FROM purchases WHERE id = ?")->execute([$purchase_id]);
+            
+            Flash::success('Compra eliminada');
+            header('Location: ?page=purchases');
+            exit;
+        }
+        
         if ($action === 'receive' && isset($_GET['id'])) {
             $purchase_id = intval($_GET['id']);
             $purchase = db()->prepare("SELECT * FROM purchases WHERE id = ?");

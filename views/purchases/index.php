@@ -35,6 +35,7 @@ $content .= '
                     <th>Total</th>
                     <th>Pago</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>';
@@ -43,8 +44,9 @@ if (count($purchases) == 0) {
     $content .= '<tr><td colspan="7" class="text-center">No hay compras</td></tr>';
 } else {
     foreach ($purchases as $p) {
-        $statusClass = $p['status'] === 'pending' ? 'warning' : ($p['status'] === 'paid' ? 'success' : 'secondary');
-        $statusLabel = $p['status'] === 'pending' ? 'Pendiente' : ($p['status'] === 'paid' ? 'Pagado' : 'Cancelado');
+        $rawStatus = $p['status'] ?? 'contado';
+        $statusClass = $rawStatus === 'pending' ? 'warning' : ($rawStatus === 'paid' ? 'success' : ($rawStatus === 'received' ? 'info' : 'success'));
+        $statusLabel = $rawStatus === 'pending' ? 'Pendiente' : ($rawStatus === 'paid' ? 'Pagado' : ($rawStatus === 'received' ? 'Recibido' : 'Contado'));
         $paymentLabel = $p['payment_method'] === 'contado' ? 'Contado' : 'Crédito';
         
         $content .= '<tr>
@@ -55,6 +57,10 @@ if (count($purchases) == 0) {
             <td>' . Format::money($p['total']) . '</td>
             <td>' . $paymentLabel . '</td>
             <td><span class="badge bg-' . $statusClass . '">' . $statusLabel . '</span></td>
+            <td>
+                <a href="?page=purchases&action=view&id=' . $p['id'] . '" class="btn btn-sm btn-primary">Ver</a>
+                <a href="?page=purchases&action=edit&id=' . $p['id'] . '" class="btn btn-sm btn-warning">Editar</a>
+            </td>
         </tr>';
     }
 }
