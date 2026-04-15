@@ -10,133 +10,130 @@ $stockBajo = $productsLow['COUNT(*)'] ?? 0;
 $clientesDeuda = $clientsDebt['COUNT(*)'] ?? 0;
 $totalDeuda = $clientsDebt['COALESCE(SUM(balance), 0)'] ?? 0;
 
-$content = '
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card" style="border-color: var(--primary);">
-            <div class="card-body">
-                <h6 class="text-muted">Ventas Hoy</h6>
-                <h3 class="mb-0">' . Format::money($totalVentasHoy) . '</h3>
-                <small class="text-muted">' . $cantidadVentasHoy . ' transacciones</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card" style="border-color: var(--success);">
-            <div class="card-body">
-                <h6 class="text-muted">Ventas del Mes</h6>
-                <h3 class="mb-0">' . Format::money($totalVentasMes) . '</h3>
-                <small class="text-muted">' . $cantidadVentasMes . ' transacciones</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card" style="border-color: var(--warning);">
-            <div class="card-body">
-                <h6 class="text-muted">Stock Bajo</h6>
-                <h3 class="mb-0">' . $stockBajo . '</h3>
-                <small class="text-muted">productos</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card" style="border-color: var(--danger);">
-            <div class="card-body">
-                <h6 class="text-muted">Cuentas por Cobrar</h6>
-                <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
-                <small class="text-muted">' . $clientesDeuda . ' clientes</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-';
+// Calcular cuentas por cobrar próximos 7 días
+$receivableSoon = 0;
+$receivableCountSoon = 0;
 if (!empty($overdueReceivables)) {
-    $content .= '
-<div class="row mt-3">
-    <div class="col-md-12">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">Cuentas por Cobrar</h5>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Venta</th>
-                            <th>Monto</th>
-                            <th>Vencimiento</th>
-                            <th>Días</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>';
     foreach ($overdueReceivables as $rec) {
         $dueDate = new DateTime($rec['due_date']);
         $today = new DateTime();
-        $daysOverdue = $today->diff($dueDate)->days;
-        
-        $content .= '<tr>
-            <td><strong>' . htmlspecialchars($rec['client_name']) . '</strong></td>
-            <td>#' . $rec['sale_id'] . '</td>
-            <td>' . Format::money($rec['amount']) . '</td>
-            <td' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? ' style="color:red;font-weight:bold;"' : '') . '>' . Format::date($rec['due_date']) . '</td>
-            <td>' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? '<span class="badge bg-warning">' . $daysOverdue . ' días</span>' : '<span class="badge bg-danger">' . $daysOverdue . ' días</span>') . '</td>
-            <td><a href="?page=receivable&action=pay&id=' . $rec['id'] . '" class="btn btn-sm btn-danger">Cobrar</a></td>
-        </tr>';
+        $days = $today->diff($dueDate)->days;
+        if ($days >= 0 && $days <= 7) {
+            $receivableSoon += $rec['amount'];
+            $receivableCountSoon++;
+        }
     }
-    $content .= '</tbody>
-            </table>
-        </div>
-    </div>
-</div>';
 }
 
+// Calcular cuentas por pagar próximos 7 días
+$payableSoon = 0;
+$payableCountSoon = 0;
 if (!empty($overduePayables)) {
-    $content .= '
-<div class="row mt-3">
-    <div class="col-md-12">
-        <div class="card border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">Cuentas por Pagar</h5>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Proveedor</th>
-                            <th>Compra</th>
-                            <th>Monto</th>
-                            <th>Vencimiento</th>
-                            <th>Días</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>';
     foreach ($overduePayables as $pay) {
         $dueDate = new DateTime($pay['due_date']);
         $today = new DateTime();
-        $daysOverdue = $today->diff($dueDate)->days;
-        
-        $content .= '<tr>
-            <td><strong>' . htmlspecialchars($pay['provider_name']) . '</strong></td>
-            <td>#' . $pay['purchase_id'] . '</td>
-            <td>' . Format::money($pay['amount']) . '</td>
-            <td' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? ' style="color:red;font-weight:bold;"' : '') . '>' . Format::date($pay['due_date']) . '</td>
-            <td>' . ($daysOverdue <= 7 && $daysOverdue >= 0 ? '<span class="badge bg-warning">' . $daysOverdue . ' días</span>' : '<span class="badge bg-danger">' . $daysOverdue . ' días</span>') . '</td>
-            <td><a href="?page=payable" class="btn btn-sm btn-warning">Pagar</a></td>
-        </tr>';
+        $days = $today->diff($dueDate)->days;
+        if ($days >= 0 && $days <= 7) {
+            $payableSoon += $pay['amount'];
+            $payableCountSoon++;
+        }
     }
-    $content .= '</tbody>
-            </table>
-        </div>
-    </div>
-</div>';
-
 }
 
-$content .= '
+$content = '
+<div class="row mb-4">
+    <div class="col-md-3">
+        <a href="?page=sales" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--primary);">
+                <div class="card-body">
+                    <h6 class="text-muted">Ventas Hoy</h6>
+                    <h3 class="mb-0">' . Format::money($totalVentasHoy) . '</h3>
+                    <small class="text-muted">' . $cantidadVentasHoy . ' trans.</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=sales" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--success);">
+                <div class="card-body">
+                    <h6 class="text-muted">Ventas del Mes</h6>
+                    <h3 class="mb-0">' . Format::money($totalVentasMes) . '</h3>
+                    <small class="text-muted">' . $cantidadVentasMes . ' trans.</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=products" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--warning);">
+                <div class="card-body">
+                    <h6 class="text-muted">Stock Bajo</h6>
+                    <h3 class="mb-0">' . $stockBajo . '</h3>
+                    <small class="text-muted">productos</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=receivable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--danger);">
+                <div class="card-body">
+                    <h6 class="text-muted">CxC Total</h6>
+                    <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
+                    <small class="text-muted">' . $clientesDeuda . ' clfes.</small>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <a href="?page=receivable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--info);">
+                <div class="card-body">
+                    <h6 class="text-muted">CxC (próx. 7 días)</h6>
+                    <h3 class="mb-0">' . Format::money($receivableSoon) . '</h3>
+                    <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=payable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--secondary);">
+                <div class="card-body">
+                    <h6 class="text-muted">CxP (próx. 7 días)</h6>
+                    <h3 class="mb-0">' . Format::money($payableSoon) . '</h3>
+                    <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=cash" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--dark);">
+                <div class="card-body">
+                    <h6 class="text-muted">Caja</h6>
+                    <h3 class="mb-0">Caja</h3>
+                    <small class="text-muted">Ver movimientos</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=backup" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--dark);">
+                <div class="card-body">
+                    <h6 class="text-muted">Backup</h6>
+                    <h3 class="mb-0"><i class="bi bi-download"></i></h3>
+                    <small class="text-muted">Respaldar BD</small>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
 
 <div class="row">
     <div class="col-md-12">
@@ -148,70 +145,38 @@ $content .= '
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>#</th>
+                            <th>ID</th>
                             <th>Fecha</th>
                             <th>Cliente</th>
                             <th>Total</th>
                             <th>Tipo</th>
                             <th>Estado</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>';
-                    if (empty($recentSales)) {
-                        $content .= '<tr><td colspan="6" class="text-center text-muted">No hay ventas registradas</td></tr>';
-                    } else {
-                        foreach ($recentSales as $sale) {
-                            $typeLabel = $sale['type'] === 'contado' ? 'Contado' : 'Crédito';
-                            $typeClass = $sale['type'] === 'contado' ? 'info' : 'primary';
-                            
-                            if ($sale['type'] === 'contado') {
-                                $statusLabel = 'Pagado';
-                                $statusClass = 'success';
-                            } else {
-                                $statusLabel = $sale['status'] === 'pagada' ? 'Pagado' : 'Pendiente';
-                                $statusClass = $sale['status'] === 'pagada' ? 'success' : 'warning';
-                            }
-                            
-                            $content .= '<tr>
-                                <td>' . $sale['id'] . '</td>
-                                <td>' . Format::datetime($sale['created_at']) . '</td>
-                                <td>' . ($sale['client_name'] ?? 'Mostrador') . '</td>
-                                <td>' . Format::money($sale['total']) . '</td>
-                                <td><span class="badge bg-' . $typeClass . '">' . $typeLabel . '</span></td>
-                                <td><span class="badge bg-' . $statusClass . '">' . $statusLabel . '</span></td>
-                            </tr>';
-                        }
-                    }
-                    $content .= '</tbody>
+
+if (count($recentSales) == 0) {
+    $content .= '<tr><td colspan="7" class="text-center">No hay ventas</td></tr>';
+} else {
+    foreach ($recentSales as $s) {
+        $statusClass = $s['status'] === 'pagada' ? 'success' : 'warning';
+        
+        $content .= '<tr>
+            <td>#' . $s['id'] . '</td>
+            <td>' . Format::date($s['created_at']) . '</td>
+            <td>' . htmlspecialchars($s['client_name'] ?? 'Mostrador') . '</td>
+            <td>' . Format::money($s['total']) . '</td>
+            <td>' . ($s['type'] === 'contado' ? 'Contado' : 'Crédito') . '</td>
+            <td><span class="badge bg-' . $statusClass . '">' . ($s['status'] === 'pagada' ? 'Pagada' : 'Pendiente') . '</span></td>
+            <td><a href="?page=sales&action=print&id=' . $s['id'] . '" class="btn btn-sm btn-primary" target="_blank">Imprimir</a></td>
+        </tr>';
+    }
+}
+
+$content .= '</tbody>
                 </table>
             </div>
         </div>
     </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Acciones Rápidas</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <a href="?page=pos" class="btn btn-outline-primary w-100 py-3">Nueva Venta</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="?page=products" class="btn btn-outline-success w-100 py-3">Productos</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="?page=clients" class="btn btn-outline-warning w-100 py-3">Clientes</a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="?page=receivable" class="btn btn-outline-danger w-100 py-3">Cobrar Deudas</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-';
+</div>';
