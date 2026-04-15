@@ -258,6 +258,81 @@ switch ($page) {
         view('receivable/index', compact('accounts'));
         break;
         
+    case 'payable':
+        if ($action === 'pay' && isset($_GET['id'])) {
+            $ap_id = intval($_GET['id']);
+            $ap = db()->prepare("SELECT * FROM accounts_payable WHERE id = ?");
+            $ap->execute([$ap_id]);
+            $ap = $ap->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$ap || $ap['status'] !== 'pendiente') {
+                Flash::error('Esta cuenta ya está pagada');
+                header('Location: ?page=payable');
+                exit;
+            }
+            
+            $stmt = db()->prepare("UPDATE accounts_payable SET status = 'pagado', paid_amount = amount WHERE id = ?");
+            $stmt->execute([$ap_id]);
+            
+            Flash::success('Cuenta pagada');
+            header('Location: ?page=payable');
+            exit;
+        }
+        
+        $accounts = db()->query("SELECT ap.*, p.name as provider_name FROM accounts_payable ap JOIN providers p ON ap.provider_id = p.id WHERE ap.status != 'cancelada' ORDER BY ap.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        view('payable/index', compact('accounts'));
+        break;
+        
+    case 'expenses':
+        if ($action === 'new') {
+            view('expenses/edit');
+            break;
+        }
+        
+        if ($action === 'delete' && isset($_GET['id'])) {
+            $stmt = db()->prepare("DELETE FROM expenses WHERE id = ?");
+            $stmt->execute([$_GET['id']]);
+            Flash::success('Gasto eliminado');
+            header('Location: ?page=expenses');
+            exit;
+        }
+        
+        $expenses = db()->query("SELECT e.*, u.name as user_name FROM expenses e LEFT JOIN users u ON e.user_id = u.id ORDER BY e.id DESC LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
+        view('expenses/index', compact('expenses'));
+        break;
+        
+    case 'expenses_save':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                $category = $_POST['category'] ?? '';
+                $description = $_POST['description'] ?? '';
+                $amount = floatval($_POST['amount'] ?? 0);
+                $paymentMethod = $_POST['payment_method'] ?? 'efectivo';
+                $reference = $_POST['reference'] ?? '';
+                $date = $_POST['date'] ?? date('Y-m-d');
+                $userId = auth();
+                
+                if (!$category || !$amount) {
+                    Flash::error('Debe completar categoría y monto');
+                    header('Location: ?page=expenses&action=new');
+                    exit;
+                }
+                
+                $stmt = db()->prepare("INSERT INTO expenses (user_id, category, description, amount, payment_method, reference, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+                $stmt->execute([$userId, $category, $description, $amount, $paymentMethod, $reference, $date]);
+                
+                Flash::success('Gasto registrado');
+                header('Location: ?page=expenses');
+                exit;
+            } catch (Exception $e) {
+                Flash::error('Error: ' . $e->getMessage());
+                header('Location: ?page=expenses&action=new');
+                exit;
+            }
+        }
+        header('Location: ?page=expenses');
+        exit;
+        
     case 'reports':
         $type = $_GET['type'] ?? 'sales';
         $dateFrom = $_GET['date_from'] ?? date('Y-m-01');
@@ -759,9 +834,15 @@ case 'sale_products':
                     $subtotal += $cost * $qty;
                 }
                 
-                $stmt = db()->prepare("INSERT INTO purchases (provider_id, user_id, invoice_number, subtotal, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))");
+                $stmt = db()->prepare("INSERT INTO purchases (provider_id, user_id, invoice_number, subtotal, discount, total, payment_method, status, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, 'pending', datetime('now'))");
                 $stmt->execute([$providerId, $userId, $invoiceNumber, $subtotal, $paymentMethod]);
                 $purchaseId = db()->lastInsertId();
+                
+                if ($paymentMethod === 'credito') {
+                    $dueDate = date('Y-m-d', strtotime('+30 days'));
+                    $stmtCxP = db()->prepare("INSERT INTO accounts_payable (provider_id, purchase_id, amount, due_date, status, created_at) VALUES (?, ?, ?, ?, 'pendiente', datetime('now'))");
+                    $stmtCxP->execute([$providerId, $purchaseId, $subtotal, $dueDate]);
+                }
                 
                 foreach ($items as $productId => $item) {
                     $qty = intval($item['qty'] ?? 1);

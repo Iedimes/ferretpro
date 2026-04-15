@@ -304,6 +304,33 @@ class Database extends PDO {
                 FOREIGN KEY (cash_register_id) REFERENCES cash_register(id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
+            
+            CREATE TABLE IF NOT EXISTS accounts_payable (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                provider_id INTEGER NOT NULL,
+                purchase_id INTEGER,
+                amount REAL NOT NULL,
+                paid_amount REAL DEFAULT 0,
+                due_date DATE,
+                status TEXT DEFAULT 'pendiente',
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (provider_id) REFERENCES providers(id),
+                FOREIGN KEY (purchase_id) REFERENCES purchases(id)
+            );
+            
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                description TEXT,
+                amount REAL NOT NULL,
+                payment_method TEXT DEFAULT 'efectivo',
+                reference TEXT,
+                date DATE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
         ");
         
         try {

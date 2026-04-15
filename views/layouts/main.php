@@ -33,6 +33,8 @@
             <a class="nav-link" href="?page=clients">Clientes</a>
             <a class="nav-link" href="?page=providers">Proveedores</a>
             <a class="nav-link" href="?page=receivable">Cuentas por Cobrar</a>
+            <a class="nav-link" href="?page=payable">Cuentas por Pagar</a>
+            <a class="nav-link" href="?page=expenses">Gastos</a>
             <a class="nav-link" href="?page=cash">Caja</a>
             <a class="nav-link" href="?page=categories">Categorías</a>
             <a class="nav-link" href="?page=reports">Reportes</a>
