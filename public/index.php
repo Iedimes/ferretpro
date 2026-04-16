@@ -211,6 +211,32 @@ switch ($page) {
         $productsLow = db()->query("SELECT COUNT(*) FROM products WHERE stock <= min_stock AND active = 1")->fetch(PDO::FETCH_ASSOC);
         $clientsDebt = db()->query("SELECT COUNT(*), COALESCE(SUM(balance), 0) FROM clients WHERE balance > 0")->fetch(PDO::FETCH_ASSOC);
         $salesMonth = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
+        
+        // Products más vendidos del mes
+        $topProducts = db()->query("
+            SELECT p.name, SUM(sd.quantity) as quantity_sold, SUM(sd.subtotal) as total_vendido
+            FROM sale_details sd
+            JOIN products p ON sd.product_id = p.id
+            JOIN sales s ON sd.sale_id = s.id
+            WHERE strftime('%Y-%m', s.created_at) = strftime('%Y-%m', 'now')
+            GROUP BY p.id
+            ORDER BY quantity_sold DESC
+            LIMIT 10
+        ")->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Ventas por vendedor
+        $salesByUser = db()->query("
+            SELECT u.name, COUNT(s.id) as ventas, COALESCE(SUM(s.total), 0) as total
+            FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE strftime('%Y-%m', s.created_at) = strftime('%Y-%m', 'now')
+            GROUP BY u.id
+            ORDER BY total DESC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Gastos del mes
+        $expensesMonth = db()->query("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
+        
         $recentSales = db()->query("SELECT s.*, u.name as user_name, c.name as client_name FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
         
         // Cuentas por cobrar pendientes
@@ -234,7 +260,7 @@ switch ($page) {
             LIMIT 10
         ")->fetchAll(PDO::FETCH_ASSOC);
         
-        view('dashboard', compact('salesToday', 'productsLow', 'clientsDebt', 'salesMonth', 'recentSales', 'overdueReceivables', 'overduePayables'));
+        view('dashboard', compact('salesToday', 'productsLow', 'clientsDebt', 'salesMonth', 'recentSales', 'overdueReceivables', 'overduePayables', 'topProducts', 'salesByUser', 'expensesMonth'));
         break;
         
     case 'pos':

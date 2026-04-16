@@ -93,10 +93,90 @@ $content = '
         <a href="?page=receivable" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--info);">
                 <div class="card-body">
-                    <h6 class="text-muted">CxC (próx. 7 días)</h6>
+                    <h6 class="text-muted">CxC 7 días</h6>
                     <h3 class="mb-0">' . Format::money($receivableSoon) . '</h3>
                     <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
                 </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=payable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--info);">
+                <div class="card-body">
+                    <h6 class="text-muted">CxP 7 días</h6>
+                    <h3 class="mb-0">' . Format::money($payableSoon) . '</h3>
+                    <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=expenses" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--secondary);">
+                <div class="card-body">
+                    <h6 class="text-muted">Gastos del Mes</h6>
+                    <h3 class="mb-0">' . Format::money($expensesMonth['total'] ?? 0) . '</h3>
+                    <small class="text-muted">operativos</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card" style="border-color: var(--primary);">
+            <div class="card-body">
+                <h6 class="text-muted">Margen Estimado</h6>
+                <h3 class="mb-0">' . Format::money(max(0, $totalVentasMes - ($expensesMonth['total'] ?? 0))) . '</h3>
+                <small class="text-muted">ventas - gastos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Productos Más Vendidos del Mes</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead>
+                    <tbody>';
+if (!empty($topProducts)) {
+    foreach ($topProducts as $p) {
+        $content .= '<tr><td>' . htmlspecialchars($p['name']) . '</td><td>' . $p['quantity_sold'] . '</td><td>' . Format::money($p['total_vendido']) . '</td></tr>';
+    }
+} else {
+    $content .= '<tr><td colspan="3">Sin ventas este mes</td></tr>';
+}
+$content .= '</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Ventas por Vendedor</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Vendedor</th><th>Ventas</th><th>Total</th></tr></thead>
+                    <tbody>';
+if (!empty($salesByUser)) {
+    foreach ($salesByUser as $u) {
+        $content .= '<tr><td>' . htmlspecialchars($u['name']) . '</td><td>' . $u['ventas'] . '</td><td>' . Format::money($u['total']) . '</td></tr>';
+    }
+} else {
+    $content .= '<tr><td colspan="3">Sin ventas este mes</td></tr>';
+}
+$content .= '</tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
             </div>
         </a>
     </div>
