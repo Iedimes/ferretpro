@@ -36,7 +36,7 @@ foreach ($products as $p) {
     $stock_warning = $p['stock'] <= $p['min_stock'] ? 'border-warning border-2' : '';
     $iva_label = $p['iva'] == 0 ? 'Exento' : $p['iva'] . '%';
     $content .= '<div class="col-md-3 col-6 mb-2 product-card" data-category="' . ($p['category_id'] ?? '') . '" data-min-stock="' . $p['min_stock'] . '">
-        <div class="card h-100 product-item ' . $stock_warning . '" style="cursor: pointer;" data-id="' . $p['id'] . '" data-name="' . htmlspecialchars($p['name']) . '" data-price="' . $p['sale_price'] . '" data-wholesale-price="' . ($p['wholesale_price'] ?? $p['sale_price']) . '" data-stock="' . $p['stock'] . '" data-min-stock="' . $p['min_stock'] . '" data-code="' . htmlspecialchars($p['code']) . '" data-iva="' . $p['iva'] . '">
+        <div class="card h-100 product-item ' . $stock_warning . '" style="cursor: pointer;" data-id="' . $p['id'] . '" data-name="' . htmlspecialchars($p['name']) . '" data-price="' . $p['sale_price'] . '" data-wholesale-price="' . ($p['wholesale_price'] ?? $p['sale_price']) . '" data-stock="' . $p['stock'] . '" data-min-stock="' . $p['min_stock'] . '" data-code="' . htmlspecialchars($p['code']) . '" data-barcode="' . htmlspecialchars($p['barcode'] ?? '') . '" data-iva="' . $p['iva'] . '">
             <div class="card-body text-center p-2">
                 <h6 class="mb-1 text-truncate">' . htmlspecialchars($p['name']) . '</h6>
                 <p class="text-muted small mb-1">' . $p['code'] . '</p>
@@ -344,14 +344,19 @@ function searchProducts() {
     products.forEach(p => {
         const name = (p.dataset.name || "").toLowerCase();
         const code = (p.dataset.code || "").toLowerCase();
-        if (name.includes(term) || code.includes(term)) {
+        const barcode = (p.dataset.barcode || "").toLowerCase();
+        if (name.includes(term) || code.includes(term) || barcode.includes(term)) {
             results.push(p);
         }
     });
     
     console.log("✓ Encontrados", results.length, "resultados");
     
-    if (results.length > 0) {
+    if (results.length === 1 && term.length >= 4) {
+        searchResults.style.display = "none";
+        addToCart(results[0].dataset.id);
+        searchInput.value = "";
+    } else if (results.length > 0) {
         let html = "";
         results.slice(0, 10).forEach(p => {
             html += "<a href=\"#\" class=\"list-group-item list-group-item-action\" onclick=\"selectFromSearch(\'" + p.dataset.id + "\'); return false;\">" + 
