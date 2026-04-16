@@ -353,9 +353,28 @@ function searchProducts() {
     
     console.log("✓ Encontrados", results.length, "resultados");
     
-    if (results.length === 1 && term.length >= 4) {
+    const exactBarcodeMatch = results.find(p => (p.dataset.barcode || "").toLowerCase() === term);
+    const exactCodeMatch = results.find(p => (p.dataset.code || "").toLowerCase() === term);
+    
+    if (exactBarcodeMatch) {
         searchResults.style.display = "none";
-        addToCart(results[0].dataset.id);
+        addItem({
+            id: parseInt(exactBarcodeMatch.dataset.id),
+            name: exactBarcodeMatch.dataset.name,
+            price: parseFloat(exactBarcodeMatch.dataset.price),
+            stock: parseInt(exactBarcodeMatch.dataset.stock),
+            iva: parseInt(exactBarcodeMatch.dataset.iva)
+        });
+        searchInput.value = "";
+    } else if (exactCodeMatch) {
+        searchResults.style.display = "none";
+        addItem({
+            id: parseInt(exactCodeMatch.dataset.id),
+            name: exactCodeMatch.dataset.name,
+            price: parseFloat(exactCodeMatch.dataset.price),
+            stock: parseInt(exactCodeMatch.dataset.stock),
+            iva: parseInt(exactCodeMatch.dataset.iva)
+        });
         searchInput.value = "";
     } else if (results.length > 0) {
         let html = "";
