@@ -26,7 +26,6 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $stock = intval($_POST['stock'] ?? 0);
     $min_stock = intval($_POST['min_stock'] ?? 5);
     $location = trim($_POST['location'] ?? '');
-    $image = trim($_POST['image'] ?? '');
     $product_id_form = intval($_POST['product_id'] ?? 0);
     
     if (empty($name)) {
@@ -37,9 +36,9 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($product_id_form > 0) {
             // UPDATE
-            $sql = "UPDATE products SET code = ?, barcode = ?, name = ?, description = ?, category_id = ?, provider_id = ?, unit = ?, cost_price = ?, sale_price = ?, wholesale_price = ?, iva = ?, stock = ?, min_stock = ?, location = ?, image = ? WHERE id = ?";
+            $sql = "UPDATE products SET code = ?, barcode = ?, name = ?, description = ?, category_id = ?, provider_id = ?, unit = ?, cost_price = ?, sale_price = ?, wholesale_price = ?, iva = ?, stock = ?, min_stock = ?, location = ? WHERE id = ?";
             $stmt = db()->prepare($sql);
-            $success = $stmt->execute([$code, $barcode, $name, $description, $category_id, $provider_id, $unit, $cost_price, $sale_price, $wholesale_price, $iva, $stock, $min_stock, $location, $image, $product_id_form]);
+            $success = $stmt->execute([$code, $barcode, $name, $description, $category_id, $provider_id, $unit, $cost_price, $sale_price, $wholesale_price, $iva, $stock, $min_stock, $location, $product_id_form]);
             if ($success) {
                 flash('success', 'Producto actualizado correctamente');
             } else {
@@ -47,9 +46,9 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // INSERT
-            $sql = "INSERT INTO products (code, barcode, name, description, category_id, provider_id, unit, cost_price, sale_price, wholesale_price, iva, stock, min_stock, location, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO products (code, barcode, name, description, category_id, provider_id, unit, cost_price, sale_price, wholesale_price, iva, stock, min_stock, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = db()->prepare($sql);
-            $success = $stmt->execute([$code, $barcode, $name, $description, $category_id, $provider_id, $unit, $cost_price, $sale_price, $wholesale_price, $iva, $stock, $min_stock, $location, $image]);
+            $success = $stmt->execute([$code, $barcode, $name, $description, $category_id, $provider_id, $unit, $cost_price, $sale_price, $wholesale_price, $iva, $stock, $min_stock, $location]);
             if ($success) {
                 flash('success', 'Producto creado correctamente');
             } else {
@@ -93,8 +92,7 @@ if ($action === 'new' || $action === 'edit') {
         'iva' => 10,
         'stock' => 0,
         'min_stock' => 5,
-        'location' => '',
-        'image' => ''
+        'location' => ''
     ];
     
     if ($action === 'edit' && $product_id > 0) {
@@ -127,11 +125,7 @@ if ($action === 'new' || $action === 'edit') {
                         <label class="form-label">Código de Barras</label>
                         <input type="text" name="barcode" class="form-control" value="' . htmlspecialchars($product['barcode']) . '">
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label">Imagen (URL)</label>
-                        <input type="text" name="image" class="form-control" value="' . htmlspecialchars($product['image'] ?? '') . '" placeholder="https://...">
-                    </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 mb-3">
                         <label class="form-label">Nombre *</label>
                         <input type="text" name="name" class="form-control" required value="' . htmlspecialchars($product['name']) . '">
                     </div>
