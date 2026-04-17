@@ -183,4 +183,44 @@ if (strpos($uri, '/settings') === 0) {
     exit;
 }
 
+if (strpos($uri, '/expenses') === 0) {
+    require __DIR__ . '/views/expenses/index.php';
+    exit;
+}
+
+if (strpos($uri, '/quotes') === 0) {
+    require __DIR__ . '/views/quotes/index.php';
+    exit;
+}
+
+if (strpos($uri, '/credit_notes') === 0) {
+    require __DIR__ . '/views/credit_notes/index.php';
+    exit;
+}
+
+if (strpos($uri, '/purchases') === 0) {
+    require __DIR__ . '/views/purchases/index.php';
+    exit;
+}
+
+if (strpos($uri, '/payable') === 0) {
+    require __DIR__ . '/views/payable/index.php';
+    exit;
+}
+
+if (strpos($uri, '/cash') === 0) {
+    require __DIR__ . '/views/cash/index.php';
+    exit;
+}
+
+if (strpos($uri, '/backup') === 0) {
+    require __DIR__ . '/views/backup/index.php';
+    exit;
+}
+
+if (strpos($uri, '/users') === 0) {
+    require __DIR__ . '/views/users/index.php';
+    exit;
+}
+
 echo "404 - Página no encontrada";
