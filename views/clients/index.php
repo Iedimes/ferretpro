@@ -122,43 +122,77 @@ $clients = db()->query("SELECT * FROM clients WHERE active = 1 ORDER BY name")->
 $debtors = db()->query("SELECT * FROM clients WHERE active = 1 AND balance > 0 ORDER BY balance DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 $content = '
-<div class="row mb-3">
-    <div class="col-md-6">
-        <a href="?page=clients&action=new" class="btn btn-primary"><i class="bi bi-person-plus"></i> Nuevo Cliente</a>
+<div class="mb-4">
+    <a href="?page=dashboard" class="btn btn-nav-back me-2"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+</div>
+
+<h4 class="mb-4"><i class="bi bi-people"></i> Gestión de Clientes</h4>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card" style="border-top: 5px solid var(--primary); background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent);">
+            <div class="card-body">
+                <h6 class="text-primary mb-1"><i class="bi bi-people"></i> Total de Clientes</h6>
+                <h3 class="mb-0 text-primary" style="font-size: 2rem; font-weight: 700;">' . count($clients) . '</h3>
+                <a href="?page=clients&action=new" class="btn btn-sm btn-primary mt-3"><i class="bi bi-person-plus"></i> Nuevo Cliente</a>
+            </div>
+        </div>
     </div>
-    <div class="col-md-6">
-        <input type="text" id="searchClients" class="form-control" placeholder="Buscar clientes...">
+    <div class="col-md-4">
+        <div class="card" style="border-top: 5px solid var(--danger); background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), transparent);">
+            <div class="card-body">
+                <h6 class="text-danger mb-1"><i class="bi bi-exclamation-circle"></i> Clientes con Deuda</h6>
+                <h3 class="mb-0 text-danger" style="font-size: 2rem; font-weight: 700;">' . count($debtors) . '</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card" style="border-top: 5px solid var(--warning); background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), transparent);">
+            <div class="card-body">
+                <h6 class="text-warning mb-1"><i class="bi bi-search"></i> Buscador Rápido</h6>
+                <input type="text" id="searchClients" class="form-control" placeholder="Buscar por nombre..." style="margin-top: 10px;">
+            </div>
+        </div>
     </div>
 </div>';
 
 if (count($debtors) > 0) {
-    $content .= '<div class="alert alert-danger">
-    <strong><i class="bi bi-exclamation-triangle"></i> ' . count($debtors) . ' clientes con deuda:</strong>
-    <table class="table table-sm mt-2 mb-0">
-        <thead><tr><th>Cliente</th><th>Deuda</th><th>Acción</th></tr></thead>
-        <tbody>';
+    $content .= '<div class="card mb-4" style="border-top: 5px solid var(--danger);">
+    <div class="card-body" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), transparent);">
+        <h6 class="text-danger mb-3"><i class="bi bi-exclamation-triangle"></i> <strong>' . count($debtors) . ' Cliente(s) con Deuda</strong></h6>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead class="table-light"><tr><th>Cliente</th><th>Deuda</th><th>Acción</th></tr></thead>
+                <tbody>';
     foreach ($debtors as $d) {
-        $content .= '<tr><td>' . htmlspecialchars($d['name']) . '</td><td>' . Format::money($d['balance']) . '</td><td><a href="?page=receivable&client=' . $d['id'] . '" class="btn btn-sm btn-danger">Cobrar</a></td></tr>';
+        $content .= '<tr><td><strong>' . htmlspecialchars($d['name']) . '</strong></td><td><span class="badge bg-danger">' . Format::money($d['balance']) . '</span></td><td><a href="?page=receivable&client=' . $d['id'] . '" class="btn btn-sm btn-danger"><i class="bi bi-cash-circle"></i> Cobrar</a></td></tr>';
     }
-    $content .= '</tbody></table></div>';
+    $content .= '</tbody></table>
+        </div>
+    </div>
+</div>';
 }
 
 $content .= '
 <div class="card">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="bi bi-table"></i> Detalle de Clientes</h6>
+    </div>
     <div class="card-body p-0">
-        <table class="table table-hover mb-0" id="clientsTable">
-            <thead class="table-light">
-                <tr>
-                    <th>Nombre</th>
-                    <th>Documento</th>
-                    <th>Teléfono</th>
-                    <th>Categoría</th>
-                    <th>Límite Crédito</th>
-                    <th>Saldo Disponible</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>';
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="clientsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Documento</th>
+                        <th>Teléfono</th>
+                        <th>Categoría</th>
+                        <th>Límite Crédito</th>
+                        <th>Saldo Disponible</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>';
 foreach ($clients as $c) {
     $availableCredit = $c['credit_limit'] - $c['balance'];
     $balanceClass = $availableCredit < 0 ? 'text-danger fw-bold' : 'text-success fw-bold';

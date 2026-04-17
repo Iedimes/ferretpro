@@ -319,34 +319,56 @@ foreach ($products as $p) {
 }
 
 $content = '
-<div class="row mb-3">
+<div class="mb-4">
+    <a href="?page=dashboard" class="btn btn-nav-back me-2"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+</div>
+
+<h4 class="mb-4"><i class="bi bi-box"></i> Gestión de Productos</h4>
+
+<div class="row mb-4">
     <div class="col-md-6">
-        <a href="?page=products&action=new" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Nuevo Producto</a>
+        <div class="card" style="border-top: 5px solid var(--primary); background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent);">
+            <div class="card-body">
+                <h6 class="text-primary mb-1"><i class="bi bi-box2-heart"></i> Total de Productos</h6>
+                <h3 class="mb-0 text-primary" style="font-size: 2rem; font-weight: 700;">' . count($products) . '</h3>
+                <a href="?page=products&action=new" class="btn btn-sm btn-primary mt-3"><i class="bi bi-plus-circle"></i> Nuevo Producto</a>
+            </div>
+        </div>
     </div>
     <div class="col-md-6">
-        <input type="text" id="search" class="form-control" placeholder="Buscar...">
+        <div class="card" style="border-top: 5px solid var(--warning); background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), transparent);">
+            <div class="card-body">
+                <h6 class="text-warning mb-1"><i class="bi bi-search"></i> Buscador Rápido</h6>
+                <input type="text" id="search" class="form-control" placeholder="Buscar por código, nombre o categoría..." style="margin-top: 10px;">
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="card">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="bi bi-table"></i> Detalle de Productos</h6>
+    </div>
     <div class="card-body p-0">
-        <table class="table table-hover mb-0" id="tabla">
-            <thead class="table-light">
-                <tr>
-                    <th>Img</th>
-                    <th>Código</th>
-                    <th>Nombre</th>
-                    <th>Categoría</th>
-                    <th>Precio Venta</th>
-                    <th>IVA</th>
-                    <th>Stock</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                ' . $rows_html . '
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="tabla">
+                <thead class="table-light">
+                    <tr>
+                        <th>Img</th>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Precio Venta</th>
+                        <th>IVA</th>
+                        <th>Stock</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ' . $rows_html . '
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
