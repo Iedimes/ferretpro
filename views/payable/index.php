@@ -22,6 +22,7 @@ $content .= '
                     <th>Proveedor</th>
                     <th>Monto</th>
                     <th>Vencimiento</th>
+                    <th>Días</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
@@ -29,17 +30,27 @@ $content .= '
             <tbody>';
 
 if (count($accounts) == 0) {
-    $content .= '<tr><td colspan="6" class="text-center">No hay cuentas por pagar</td></tr>';
+    $content .= '<tr><td colspan="7" class="text-center">No hay cuentas por pagar</td></tr>';
 } else {
     foreach ($accounts as $ac) {
         $statusClass = $ac['status'] === 'pendiente' ? 'warning' : 'success';
         $statusLabel = $ac['status'] === 'pendiente' ? 'Pendiente' : 'Pagado';
         
+        $dueDate = new DateTime($ac['due_date']);
+        $today = new DateTime();
+        $daysUntilDue = $today->diff($dueDate)->days;
+        $isOverdue = $dueDate < $today;
+        
+        $daysClass = $isOverdue ? 'text-danger fw-bold' : ($daysUntilDue <= 7 ? 'text-warning fw-bold' : 'text-muted');
+        $daysText = $isOverdue ? '-' . $daysUntilDue . ' dias' : ($daysUntilDue == 0 ? 'Hoy' : $daysUntilDue . ' dias');
+        $dueDateClass = $isOverdue ? 'text-danger' : ($daysUntilDue <= 7 ? 'text-warning' : '');
+        
         $content .= '<tr>
             <td>#' . $ac['id'] . '</td>
             <td>' . htmlspecialchars($ac['provider_name']) . '</td>
             <td>' . Format::money($ac['amount']) . '</td>
-            <td>' . Format::date($ac['due_date']) . '</td>
+            <td class="' . $dueDateClass . '"><strong>' . Format::date($ac['due_date']) . '</strong></td>
+            <td class="' . $daysClass . '">' . $daysText . '</td>
             <td><span class="badge bg-' . $statusClass . '">' . $statusLabel . '</span></td>
             <td>' . ($ac['status'] === 'pendiente' ? '<button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#payModal' . $ac['id'] . '">Pagar</button>' : '-') . '</td>
         </tr>';

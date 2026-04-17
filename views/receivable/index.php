@@ -63,17 +63,7 @@ if ($client_id) {
     $accounts = array_filter($accounts, fn($a) => $a['client_id'] == $client_id);
 }
 
-$totalPending = array_sum(array_map(fn($a) => $a['amount'] - $a['paid_amount'], $accounts));
-
 $content = '
-<div class="row mb-3">
-    <div class="col-md-4">
-        <div class="alert alert-warning">
-            <strong>Total por cobrar:</strong> ' . Format::money($totalPending) . '
-        </div>
-    </div>
-</div>
-
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Cuentas Pendientes</h5>
@@ -124,8 +114,18 @@ foreach ($accounts as $a) {
 $content .= '</tbody>
         </table>
     </div>
-</div>
+</div>';
 
+$totalPendiente = 0;
+foreach ($accounts as $a) {
+    $totalPendiente += ($a['amount'] - $a['paid_amount']);
+}
+$content .= '
+<div class="alert alert-info mt-3">
+    <strong>Total pendiente: ' . Format::money($totalPendiente) . '</strong>
+</div>';
+
+$content .= '
 <div class="modal fade" id="payModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

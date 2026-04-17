@@ -356,7 +356,7 @@ switch ($page) {
             exit;
         }
         
-        $accounts = db()->query("SELECT ap.*, p.name as provider_name FROM accounts_payable ap JOIN providers p ON ap.provider_id = p.id WHERE ap.status != 'cancelada' ORDER BY ap.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $accounts = db()->query("SELECT ap.*, p.name as provider_name FROM accounts_payable ap JOIN providers p ON ap.provider_id = p.id WHERE ap.status != 'cancelada' ORDER BY ap.due_date ASC")->fetchAll(PDO::FETCH_ASSOC);
         view('payable/index', compact('accounts'));
         break;
         
