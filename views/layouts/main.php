@@ -17,10 +17,92 @@
             --dark: #1e293b; 
         }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f9ff; }
-        .sidebar { width: 250px; background: var(--dark); height: 100vh; position: fixed; top: 0; left: 0; overflow-y: auto; }
-        .sidebar .nav-link { color: #94a3b8; padding: 12px 20px; border-left: 3px solid transparent; }
-        .sidebar .nav-link:hover { background: #334155; color: white; border-left-color: var(--primary); }
-        .sidebar .nav-link.active { background: #334155; color: white; border-left-color: var(--primary); }
+        
+        /* Sidebar Improvements */
+        .sidebar { 
+            width: 250px; 
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            height: 100vh; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            overflow-y: auto;
+            box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        .sidebar .logo-section {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        }
+        
+        .sidebar .logo-section h5 {
+            color: white;
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.3rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar nav {
+            padding: 15px 0;
+        }
+        
+        .sidebar .nav-link {
+            color: #cbd5e1;
+            padding: 12px 20px;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .sidebar .nav-link i {
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+            color: white;
+            border-left-color: var(--primary);
+            padding-left: 24px;
+        }
+        
+        .sidebar .nav-link:hover i {
+            transform: translateX(4px);
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.3) 0%, rgba(37, 99, 235, 0.1) 100%);
+            color: #3b82f6;
+            border-left-color: #3b82f6;
+            font-weight: 600;
+            padding-left: 24px;
+        }
+        
+        .sidebar .nav-link.active i {
+            color: #3b82f6;
+        }
+        
+        /* Sidebar sections */
+        .nav-section {
+            padding: 15px 15px 5px 15px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+        
+        /* Main content */
         .main-content { margin-left: 250px; padding: 20px; }
         .navbar { background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); border-radius: 10px; border: 1px solid rgba(37, 99, 235, 0.1); }
         .card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; }
@@ -35,29 +117,46 @@
 </head>
 <body>
     <div class="sidebar">
-        <div class="p-3 text-center border-bottom border-secondary">
-            <h5 class="text-white mb-0">FerrePro</h5>
+        <div class="logo-section">
+            <h5><i class="bi bi-hammer-wrench"></i> FerrePro</h5>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link" href="?page=dashboard">Dashboard</a>
-            <a class="nav-link" href="?page=pos">Punto de Venta</a>
-            <a class="nav-link" href="?page=sales">Ventas</a>
-            <a class="nav-link" href="?page=quotes">Cotizaciones</a>
-            <a class="nav-link" href="?page=credit_notes">Notas Crédito</a>
-            <a class="nav-link" href="?page=purchases">Compras</a>
-            <a class="nav-link" href="?page=products">Productos</a>
-            <a class="nav-link" href="?page=clients">Clientes</a>
-            <a class="nav-link" href="?page=providers">Proveedores</a>
-            <a class="nav-link" href="?page=receivable">Cuentas por Cobrar</a>
-            <a class="nav-link" href="?page=payable">Cuentas por Pagar</a>
-            <a class="nav-link" href="?page=expenses">Gastos</a>
-            <a class="nav-link" href="?page=cash">Caja</a>
-            <a class="nav-link" href="?page=categories">Categorías</a>
-            <a class="nav-link" href="?page=reports">Reportes</a>
-            <a class="nav-link" href="?page=backup">Backup</a>
-            <a class="nav-link" href="?page=users">Usuarios</a>
-            <a class="nav-link" href="?page=settings">Configuración</a>
-            <a class="nav-link" href="?page=logout">Salir</a>
+            <!-- Core Section -->
+            <div class="nav-section">Inicio</div>
+            <a class="nav-link" href="?page=dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            
+            <!-- Ventas Section -->
+            <div class="nav-section">Ventas & Operaciones</div>
+            <a class="nav-link" href="?page=pos"><i class="bi bi-cart-check"></i> Punto de Venta</a>
+            <a class="nav-link" href="?page=sales"><i class="bi bi-graph-up"></i> Ventas</a>
+            <a class="nav-link" href="?page=quotes"><i class="bi bi-file-earmark-text"></i> Cotizaciones</a>
+            <a class="nav-link" href="?page=credit_notes"><i class="bi bi-file-earmark-minus"></i> Notas Crédito</a>
+            <a class="nav-link" href="?page=purchases"><i class="bi bi-bag"></i> Compras</a>
+            
+            <!-- Inventario Section -->
+            <div class="nav-section">Inventario</div>
+            <a class="nav-link" href="?page=products"><i class="bi bi-box2"></i> Productos</a>
+            <a class="nav-link" href="?page=categories"><i class="bi bi-tags"></i> Categorías</a>
+            
+            <!-- Gestión Section -->
+            <div class="nav-section">Gestión</div>
+            <a class="nav-link" href="?page=clients"><i class="bi bi-people"></i> Clientes</a>
+            <a class="nav-link" href="?page=providers"><i class="bi bi-person-badge"></i> Proveedores</a>
+            <a class="nav-link" href="?page=receivable"><i class="bi bi-cash-coin"></i> Cuentas por Cobrar</a>
+            <a class="nav-link" href="?page=payable"><i class="bi bi-credit-card"></i> Cuentas por Pagar</a>
+            
+            <!-- Finanzas Section -->
+            <div class="nav-section">Finanzas</div>
+            <a class="nav-link" href="?page=expenses"><i class="bi bi-wallet2"></i> Gastos</a>
+            <a class="nav-link" href="?page=cash"><i class="bi bi-safe"></i> Caja</a>
+            <a class="nav-link" href="?page=reports"><i class="bi bi-bar-chart"></i> Reportes</a>
+            
+            <!-- Sistema Section -->
+            <div class="nav-section">Sistema</div>
+            <a class="nav-link" href="?page=backup"><i class="bi bi-cloud-arrow-down"></i> Backup</a>
+            <a class="nav-link" href="?page=users"><i class="bi bi-shield-lock"></i> Usuarios</a>
+            <a class="nav-link" href="?page=settings"><i class="bi bi-gear"></i> Configuración</a>
+            <a class="nav-link" href="?page=logout"><i class="bi bi-box-arrow-right"></i> Salir</a>
         </nav>
     </div>
     
@@ -78,5 +177,23 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set active nav link based on current page
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentPage = urlParams.get('page') || 'dashboard';
+            
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                const href = link.getAttribute('href');
+                const linkPage = new URLSearchParams(href.split('?')[1]).get('page');
+                
+                if (linkPage === currentPage) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
