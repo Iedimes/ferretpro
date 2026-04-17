@@ -147,7 +147,7 @@ $content = '
                     <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
                 </div>
             </div>
-        </a>
+</a>
     </div>
     <div class="col-md-3">
         <a href="?page=expenses" class="text-decoration-none">
@@ -160,6 +160,9 @@ $content = '
             </div>
         </a>
     </div>
+</div>
+
+<div class="row mb-4">
     <div class="col-md-3">
         <div class="card stat-card" style="border-color: var(--primary);">
             <div class="card-body">
@@ -180,9 +183,6 @@ $content = '
             </div>
         </a>
     </div>
-</div>
-
-<div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=backup" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--info);">
@@ -198,9 +198,7 @@ $content = '
 
 if ($receivableOverdue > 0 || $payableOverdue > 0) {
     $content .= '
-<div class="row mb-4">';
-    if ($receivableOverdue > 0) {
-        $content .= '
+<div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=receivable" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--danger);">
@@ -212,7 +210,6 @@ if ($receivableOverdue > 0 || $payableOverdue > 0) {
             </div>
         </a>
     </div>';
-    }
     if ($payableOverdue > 0) {
         $content .= '
     <div class="col-md-3">
