@@ -131,6 +131,28 @@ $content = '
             </div>
         </div>
     </div>
+    <div class="col-md-3">
+        <a href="?page=cash" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--dark);">
+                <div class="card-body">
+                    <h6 class="text-muted">Caja</h6>
+                    <h3 class="mb-0"><i class="bi bi-safe"></i></h3>
+                    <small class="text-muted">Ver movimientos</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=backup" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--info);">
+                <div class="card-body">
+                    <h6 class="text-muted">Backup</h6>
+                    <h3 class="mb-0"><i class="bi bi-download"></i></h3>
+                    <small class="text-muted">Respaldar BD</small>
+                </div>
+            </div>
+        </a>
+    </div>
 </div>
 
 <div class="row mb-4">
@@ -175,43 +197,6 @@ $content .= '</tbody>
                 </table>
             </div>
         </div>
-    </div>
-</div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="?page=payable" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--secondary);">
-                <div class="card-body">
-                    <h6 class="text-muted">CxP (próx. 7 días)</h6>
-                    <h3 class="mb-0">' . Format::money($payableSoon) . '</h3>
-                    <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="?page=cash" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--dark);">
-                <div class="card-body">
-                    <h6 class="text-muted">Caja</h6>
-                    <h3 class="mb-0">Caja</h3>
-                    <small class="text-muted">Ver movimientos</small>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="?page=backup" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--dark);">
-                <div class="card-body">
-                    <h6 class="text-muted">Backup</h6>
-                    <h3 class="mb-0"><i class="bi bi-download"></i></h3>
-                    <small class="text-muted">Respaldar BD</small>
-                </div>
-            </div>
-        </a>
     </div>
 </div>
 
