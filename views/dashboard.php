@@ -87,6 +87,7 @@ if (!empty($overduePayables)) {
 }
 
 $content = '
+<!-- Fila 1: Ventas Hoy, Ventas del Mes, Gastos del Mes, Margen Estimado -->
 <div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=sales" class="text-decoration-none">
@@ -111,16 +112,29 @@ $content = '
         </a>
     </div>
     <div class="col-md-3">
-        <a href="?page=products&sort=stock" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--warning);">
+        <a href="?page=expenses" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--secondary);">
                 <div class="card-body">
-                    <h6 class="text-muted">Stock Bajo</h6>
-                    <h3 class="mb-0">' . $stockBajo . '</h3>
-                    <small class="text-muted">productos</small>
+                    <h6 class="text-muted">Gastos del Mes</h6>
+                    <h3 class="mb-0">' . Format::money($expensesMonth['total'] ?? 0) . '</h3>
+                    <small class="text-muted">operativos</small>
                 </div>
             </div>
         </a>
     </div>
+    <div class="col-md-3">
+        <div class="card stat-card" style="border-color: var(--primary);">
+            <div class="card-body">
+                <h6 class="text-muted">Margen Estimado</h6>
+                <h3 class="mb-0">' . Format::money(max(0, $totalVentasMes - ($expensesMonth['total'] ?? 0))) . '</h3>
+                <small class="text-muted">ventas - gastos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fila 2: CxC Total, CxP Total, CxC 10 días, CxP 10 días -->
+<div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=receivable" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--danger);">
@@ -128,20 +142,6 @@ $content = '
                     <h6 class="text-muted">Cuentas por Cobrar (Total)</h6>
                     <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
                     <small class="text-muted">' . $totalReceivableCount . ' cuentas</small>
-                </div>
-            </div>
-        </a>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-3">
-        <a href="?page=receivable&filter=10days" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--warning);">
-                <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Cobrar (10 días)</h6>
-                    <h3 class="mb-0 text-warning">' . Format::money($receivableSoon) . '</h3>
-                    <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
                 </div>
             </div>
         </a>
@@ -158,38 +158,52 @@ $content = '
         </a>
     </div>
     <div class="col-md-3">
-        <a href="?page=payable&filter=10days" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--warning);">
+        <a href="?page=receivable&filter=10days" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--info);">
                 <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Pagar (10 días)</h6>
-                    <h3 class="mb-0 text-warning">' . Format::money($payableSoon) . '</h3>
-                    <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
+                    <h6 class="text-muted">Cuentas por Cobrar (10 días)</h6>
+                    <h3 class="mb-0 text-info">' . Format::money($receivableSoon) . '</h3>
+                    <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
                 </div>
             </div>
         </a>
     </div>
     <div class="col-md-3">
-        <a href="?page=expenses" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--secondary);">
+        <a href="?page=payable&filter=10days" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--info);">
                 <div class="card-body">
-                    <h6 class="text-muted">Gastos del Mes</h6>
-                    <h3 class="mb-0">' . Format::money($expensesMonth['total'] ?? 0) . '</h3>
-                    <small class="text-muted">operativos</small>
+                    <h6 class="text-muted">Cuentas por Pagar (10 días)</h6>
+                    <h3 class="mb-0 text-info">' . Format::money($payableSoon) . '</h3>
+                    <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
                 </div>
             </div>
         </a>
     </div>
 </div>
 
+<!-- Fila 3: CxC Vencidas, CxP Vencidas, Caja, Stock Bajo -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card stat-card" style="border-color: var(--primary);">
-            <div class="card-body">
-                <h6 class="text-muted">Margen Estimado</h6>
-                <h3 class="mb-0">' . Format::money(max(0, $totalVentasMes - ($expensesMonth['total'] ?? 0))) . '</h3>
-                <small class="text-muted">ventas - gastos</small>
+        <a href="?page=receivable&filter=overdue" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--danger);">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas por Cobrar Vencidas</h6>
+                    <h3 class="mb-0 text-danger">' . Format::money($receivableOverdue) . '</h3>
+                    <small class="text-muted">' . $receivableCountOverdue . ' cuentas</small>
+                </div>
             </div>
-        </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=payable&filter=overdue" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--danger);">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas por Pagar Vencidas</h6>
+                    <h3 class="mb-0 text-danger">' . Format::money($payableOverdue) . '</h3>
+                    <small class="text-muted">' . $payableCountOverdue . ' cuentas</small>
+                </div>
+            </div>
+        </a>
     </div>
     <div class="col-md-3">
         <a href="?page=cash" class="text-decoration-none">
@@ -203,6 +217,21 @@ $content = '
         </a>
     </div>
     <div class="col-md-3">
+        <a href="?page=products&sort=stock" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--warning);">
+                <div class="card-body">
+                    <h6 class="text-muted">Stock Bajo</h6>
+                    <h3 class="mb-0">' . $stockBajo . '</h3>
+                    <small class="text-muted">productos</small>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Fila 4: Backup -->
+<div class="row mb-4">
+    <div class="col-md-3">
         <a href="?page=backup" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--info);">
                 <div class="card-body">
@@ -213,41 +242,9 @@ $content = '
             </div>
         </a>
     </div>
-</div>';
+</div>
 
-if ($receivableOverdue > 0 || $payableOverdue > 0) {
-    $content .= '
-<div class="row mb-4">
-    <div class="col-md-3">
-        <a href="?page=receivable&filter=overdue" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--danger);">
-                <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Cobrar Vencidas</h6>
-                    <h3 class="mb-0 text-danger">' . Format::money($receivableOverdue) . '</h3>
-                    <small class="text-muted">' . $receivableCountOverdue . ' cuentas</small>
-                </div>
-            </div>
-        </a>
-    </div>';
-    if ($payableOverdue > 0) {
-        $content .= '
-    <div class="col-md-3">
-        <a href="?page=payable&filter=overdue" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--danger);">
-                <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Pagar Vencidas</h6>
-                    <h3 class="mb-0 text-danger">' . Format::money($payableOverdue) . '</h3>
-                    <small class="text-muted">' . $payableCountOverdue . ' cuentas</small>
-                </div>
-            </div>
-        </a>
-    </div>';
-    }
-    $content .= '
-</div>';
-}
-
-$content .= '
+<!-- Sección de tablas -->
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
