@@ -29,7 +29,7 @@ if (!empty($overduePayables)) {
     }
 }
 
-// Calcular cuentas por cobrar próximos 7 días
+// Calcular cuentas por cobrar próximos 10 días
 $receivableSoon = 0;
 $receivableCountSoon = 0;
 if (!empty($overdueReceivables)) {
@@ -37,14 +37,14 @@ if (!empty($overdueReceivables)) {
         $dueDate = new DateTime($rec['due_date']);
         $today = new DateTime();
         $days = $today->diff($dueDate)->days;
-        if ($days >= 0 && $days <= 7) {
+        if ($days >= 0 && $days <= 10) {
             $receivableSoon += $rec['amount'];
             $receivableCountSoon++;
         }
     }
 }
 
-// Calcular cuentas por pagar próximos 7 días
+// Calcular cuentas por pagar próximos 10 días
 $payableSoon = 0;
 $payableCountSoon = 0;
 if (!empty($overduePayables)) {
@@ -52,7 +52,7 @@ if (!empty($overduePayables)) {
         $dueDate = new DateTime($pay['due_date']);
         $today = new DateTime();
         $days = $today->diff($dueDate)->days;
-        if ($days >= 0 && $days <= 7) {
+        if ($days >= 0 && $days <= 10) {
             $payableSoon += $pay['amount'];
             $payableCountSoon++;
         }
@@ -137,10 +137,10 @@ $content = '
 <div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=receivable" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--info);">
+            <div class="card stat-card" style="border-color: var(--warning);">
                 <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Cobrar (7 días)</h6>
-                    <h3 class="mb-0">' . Format::money($receivableSoon) . '</h3>
+                    <h6 class="text-muted">Cuentas por Cobrar (10 días)</h6>
+                    <h3 class="mb-0 text-warning">' . Format::money($receivableSoon) . '</h3>
                     <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
                 </div>
             </div>
@@ -159,14 +159,14 @@ $content = '
     </div>
     <div class="col-md-3">
         <a href="?page=payable" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--info);">
+            <div class="card stat-card" style="border-color: var(--warning);">
                 <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Pagar (7 días)</h6>
-                    <h3 class="mb-0">' . Format::money($payableSoon) . '</h3>
+                    <h6 class="text-muted">Cuentas por Pagar (10 días)</h6>
+                    <h3 class="mb-0 text-warning">' . Format::money($payableSoon) . '</h3>
                     <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
                 </div>
             </div>
-</a>
+        </a>
     </div>
     <div class="col-md-3">
         <a href="?page=expenses" class="text-decoration-none">
