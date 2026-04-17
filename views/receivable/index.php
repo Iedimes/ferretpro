@@ -17,9 +17,20 @@ if ($filter === '10days') {
 }
 
 $content = '
+<div class="mb-3">
+    <a href="?page=dashboard" class="btn btn-nav-back me-2"><i class="bi bi-arrow-left"></i> Volver al Dashboard</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), transparent);">
+        <h6 class="text-muted mb-1"><i class="bi bi-info-circle"></i> Total Pendiente</h6>
+        <h3 class="mb-0" style="font-size: 2rem; font-weight: 700; color: var(--danger);" id="totalPendienteBadge">Cargando...</h3>
+    </div>
+</div>
+
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Cuentas Pendientes</h5>
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-file-earmark-text"></i> ' . htmlspecialchars($pageTitle) . '</h6>
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
@@ -31,8 +42,8 @@ $content = '
                     <th>Pagado</th>
                     <th>Saldo</th>
                     <th>Vencimiento</th>
-                    <th>Dias</th>
-                    <th>Accion</th>
+                    <th>Días</th>
+                    <th>Acción</th>
                 </tr>
             </thead>
             <tbody>';
@@ -50,15 +61,15 @@ foreach ($accounts as $a) {
     
     $content .= '<tr>
         <td><strong>' . htmlspecialchars($a['client_name']) . '</strong></td>
-        <td><a href="?page=sales&action=edit&id=' . $a['sale_id'] . '">#' . $a['sale_id'] . '</a></td>
-        <td>' . Format::money($a['amount']) . '</td>
-        <td>' . Format::money($a['paid_amount']) . '</td>
-        <td class="text-danger fw-bold">' . Format::money($pending) . '</td>
+        <td><a href="?page=sales&action=edit&id=' . $a['sale_id'] . '" class="badge bg-primary text-decoration-none">#' . $a['sale_id'] . '</a></td>
+        <td><strong>' . Format::money($a['amount']) . '</strong></td>
+        <td><span class="badge bg-success">' . Format::money($a['paid_amount']) . '</span></td>
+        <td><span class="badge bg-danger">' . Format::money($pending) . '</span></td>
         <td class="' . $dueDateClass . '"><strong>' . Format::date($a['due_date']) . '</strong></td>
-        <td class="' . $daysClass . '">' . $daysText . '</td>
+        <td class="' . $daysClass . '"><strong>' . $daysText . '</strong></td>
         <td>
             <button class="btn btn-sm btn-success" onclick="showPayModal(' . $a['id'] . ', ' . $pending . ', \'' . htmlspecialchars($a['client_name']) . '\')">
-                <i class="bi bi-cash"></i> Cobrar
+                <i class="bi bi-cash-circle"></i> Cobrar
             </button>
         </td>
     </tr>';
@@ -73,9 +84,17 @@ $totalPendiente = 0;
 foreach ($accounts as $a) {
     $totalPendiente += ($a['amount'] - $a['paid_amount']);
 }
-$content .= '
-<div class="alert alert-info mt-3">
-    <strong>Total pendiente: ' . Format::money($totalPendiente) . '</strong>
+
+$content .= '</tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3" style="border-top: 5px solid var(--danger);">
+    <div class="card-body" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), transparent);">
+        <h6 class="text-danger mb-1"><i class="bi bi-exclamation-circle"></i> Total Pendiente de Cobrar</h6>
+        <h3 class="mb-0 text-danger" style="font-size: 2rem; font-weight: 700;">' . Format::money($totalPendiente) . '</h3>
+    </div>
 </div>';
 
 $content .= '
