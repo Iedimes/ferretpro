@@ -26,7 +26,20 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $stock = intval($_POST['stock'] ?? 0);
     $min_stock = intval($_POST['min_stock'] ?? 5);
     $location = trim($_POST['location'] ?? '');
-    $image = trim($_POST['image'] ?? '');
+    $image = $product['image'] ?? '';
+    
+    if (!empty($_FILES['productImageFile']['name'])) {
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/products/';
+        $ext = strtolower(pathinfo($_FILES['productImageFile']['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        if (in_array($ext, $allowedExts)) {
+            $newFileName = uniqid('prod_') . '.' . $ext;
+            if (move_uploaded_file($_FILES['productImageFile']['tmp_name'], $uploadDir . $newFileName)) {
+                $image = 'uploads/products/' . $newFileName;
+            }
+        }
+    }
+    
     $product_id_form = intval($_POST['product_id'] ?? 0);
     
     if (empty($name)) {
@@ -204,8 +217,14 @@ if ($action === 'new' || $action === 'edit') {
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label">Imagen (URL)</label>
-                    <input type="text" name="image" class="form-control" value="' . htmlspecialchars($product['image'] ?? '') . '" placeholder="https://...">
+                    <label class="form-label">Imagen</label>
+                    <input type="file" id="productImageFile" class="form-control" accept="image/*" onchange="previewImage(this)">
+                    <input type="hidden" name="image" id="productImagePath" value="' . htmlspecialchars($product['image'] ?? '') . '">
+                    <div id="imagePreview" class="mt-2">';
+    if (!empty($product['image'])) {
+        $content .= '<img src="' . htmlspecialchars($product['image']) . '" style="max-height: 150px; border: 1px solid #ddd; padding: 5px;">';
+    }
+    $content .= '</div>
                 </div>
                 
                 <div class="mb-3">
@@ -232,6 +251,18 @@ if ($action === 'new' || $action === 'edit') {
                 document.getElementById("wholesalePrice").value = wholesalePrice;
             }
             
+            function previewImage(input) {
+                if (input.files && input.files[0]) {
+                    var file = input.files[0];
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById("imagePreview").innerHTML = "<img src=\"" + e.target.result + "\" style=\"max-height: 150px; border: 1px solid #ddd; padding: 5px;\">";
+                        document.getElementById("productImagePath").value = file.name;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            
             document.getElementById("costPrice").addEventListener("input", calculatePrices);
             </script>
         </div>
@@ -246,7 +277,9 @@ $rows_html = '';
 foreach ($products as $p) {
     $stockClass = $p['stock'] <= $p['min_stock'] ? 'text-danger fw-bold' : '';
     $iva_label = $p['iva'] == 0 ? 'Exento' : $p['iva'] . '%';
+    $imgHtml = !empty($p['image']) ? '<img src="' . BASE_URL . '/public/' . htmlspecialchars($p['image']) . '" style="max-height: 50px;">' : '';
     $rows_html .= '<tr>
+        <td>' . $imgHtml . '</td>
         <td>' . htmlspecialchars($p['code']) . '</td>
         <td>' . htmlspecialchars($p['name']) . '</td>
         <td>' . ($p['category_name'] ?? '-') . '</td>
@@ -275,6 +308,7 @@ $content = '
         <table class="table table-hover mb-0" id="tabla">
             <thead class="table-light">
                 <tr>
+                    <th>Img</th>
                     <th>Código</th>
                     <th>Nombre</th>
                     <th>Categoría</th>
