@@ -294,7 +294,9 @@ if ($action === 'new' || $action === 'edit') {
 }
 
 // ===== LISTAR PRODUCTOS =====
-$products = db()->query("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.active = 1 ORDER BY p.name")->fetchAll(PDO::FETCH_ASSOC);
+$sort = $_GET['sort'] ?? 'name';
+$orderBy = $sort === 'stock' ? 'p.stock ASC, p.min_stock DESC' : 'p.name';
+$products = db()->query("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.active = 1 ORDER BY $orderBy")->fetchAll(PDO::FETCH_ASSOC);
 
 $rows_html = '';
 foreach ($products as $p) {

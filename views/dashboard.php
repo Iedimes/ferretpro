@@ -111,7 +111,7 @@ $content = '
         </a>
     </div>
     <div class="col-md-3">
-        <a href="?page=products" class="text-decoration-none">
+        <a href="?page=products&sort=stock" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--warning);">
                 <div class="card-body">
                     <h6 class="text-muted">Stock Bajo</h6>
