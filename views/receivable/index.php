@@ -4,6 +4,7 @@ $pageTitle = 'Cuentas por Cobrar';
 
 $action = $_GET['action'] ?? 'list';
 $client_id = $_GET['client'] ?? null;
+$filter = $_GET['filter'] ?? null;
 
 if ($action === 'pay' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $account_id = $_POST['account_id'] ?? null;
@@ -62,6 +63,17 @@ $accounts = db()->query("
 if ($client_id) {
     $accounts = array_filter($accounts, fn($a) => $a['client_id'] == $client_id);
 }
+
+if ($filter === '10days') {
+    $today = new DateTime();
+    $accounts = array_filter($accounts, function($a) use ($today) {
+        $dueDate = new DateTime($a['due_date']);
+        $days = $today->diff($dueDate)->days;
+        return $days >= 0 && $days <= 10;
+    });
+}
+
+$pageTitle = $filter === '10days' ? 'Cuentas por Cobrar (Próximos 10 días)' : 'Cuentas por Cobrar';
 
 $content = '
 <div class="card">
