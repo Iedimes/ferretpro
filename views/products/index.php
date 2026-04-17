@@ -5,6 +5,34 @@ $pageTitle = 'Gestión de Productos';
 $action = $_GET['action'] ?? 'list';
 $product_id = intval($_GET['id'] ?? 0);
 
+$product = [
+    'id' => 0,
+    'code' => '',
+    'barcode' => '',
+    'name' => '',
+    'description' => '',
+    'category_id' => '',
+    'provider_id' => '',
+    'unit' => 'unidad',
+    'cost_price' => 0,
+    'sale_price' => 0,
+    'wholesale_price' => 0,
+    'iva' => 10,
+    'stock' => 0,
+    'min_stock' => 5,
+    'location' => '',
+    'image' => ''
+];
+
+if ($action === 'edit' && $product_id > 0) {
+    $stmt = db()->prepare("SELECT * FROM products WHERE id = ? AND active = 1");
+    $stmt->execute([$product_id]);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($data) {
+        $product = $data;
+    }
+}
+
 // Asegurar que IVA existe en la tabla
 try {
     db()->exec("ALTER TABLE products ADD COLUMN iva INTEGER DEFAULT 10");
@@ -30,12 +58,26 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (!empty($_FILES['productImageFile']['name'])) {
         $uploadDir = dirname(__DIR__, 2) . '/public/uploads/products/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
         $ext = strtolower(pathinfo($_FILES['productImageFile']['name'], PATHINFO_EXTENSION));
         $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
         if (in_array($ext, $allowedExts)) {
             $newFileName = uniqid('prod_') . '.' . $ext;
-            if (move_uploaded_file($_FILES['productImageFile']['tmp_name'], $uploadDir . $newFileName)) {
-                $image = 'uploads/products/' . $newFileName;
+            $fullPath = $uploadDir . $newFileName;
+            
+            // Intentar con move_uploaded_file, si falla usar copy
+            if (isset($_FILES['productImageFile']['tmp_name']) && is_uploaded_file($_FILES['productImageFile']['tmp_name'])) {
+                if (move_uploaded_file($_FILES['productImageFile']['tmp_name'], $fullPath)) {
+                    $image = 'uploads/products/' . $newFileName;
+                }
+            } else if (isset($_FILES['productImageFile']['tmp_name']) && $_FILES['productImageFile']['tmp_name']) {
+                // Para pruebas locales o cuando move_uploaded_file no funciona
+                if (copy($_FILES['productImageFile']['tmp_name'], $fullPath)) {
+                    $image = 'uploads/products/' . $newFileName;
+                }
             }
         }
     }
@@ -91,25 +133,6 @@ if ($action === 'delete' && $product_id > 0) {
 
 // ===== MOSTRAR FORMULARIO =====
 if ($action === 'new' || $action === 'edit') {
-    $product = [
-        'id' => 0,
-        'code' => '',
-        'barcode' => '',
-        'name' => '',
-        'description' => '',
-        'category_id' => '',
-        'provider_id' => '',
-        'unit' => 'unidad',
-        'cost_price' => 0,
-        'sale_price' => 0,
-        'wholesale_price' => 0,
-        'iva' => 10,
-        'stock' => 0,
-        'min_stock' => 5,
-        'location' => '',
-        'image' => ''
-    ];
-    
     if ($action === 'edit' && $product_id > 0) {
         $stmt = db()->prepare("SELECT * FROM products WHERE id = ? AND active = 1");
         $stmt->execute([$product_id]);
@@ -128,7 +151,7 @@ if ($action === 'new' || $action === 'edit') {
             <h5 class="mb-0">' . ($action === 'new' ? 'Nuevo Producto' : 'Editar Producto') . '</h5>
         </div>
         <div class="card-body">
-            <form method="POST" action="?page=products&action=save">
+            <form method="POST" action="?page=products&action=save" enctype="multipart/form-data">
                 <input type="hidden" name="product_id" value="' . intval($product['id']) . '">
                 
                 <div class="row">
@@ -218,7 +241,7 @@ if ($action === 'new' || $action === 'edit') {
                 
                 <div class="mb-3">
                     <label class="form-label">Imagen</label>
-                    <input type="file" id="productImageFile" class="form-control" accept="image/*" onchange="previewImage(this)">
+                    <input type="file" name="productImageFile" id="productImageFile" class="form-control" accept="image/*" onchange="previewImage(this)">
                     <input type="hidden" name="image" id="productImagePath" value="' . htmlspecialchars($product['image'] ?? '') . '">
                     <div id="imagePreview" class="mt-2">';
     if (!empty($product['image'])) {
@@ -277,7 +300,7 @@ $rows_html = '';
 foreach ($products as $p) {
     $stockClass = $p['stock'] <= $p['min_stock'] ? 'text-danger fw-bold' : '';
     $iva_label = $p['iva'] == 0 ? 'Exento' : $p['iva'] . '%';
-    $imgHtml = !empty($p['image']) ? '<img src="' . BASE_URL . '/public/' . htmlspecialchars($p['image']) . '" style="max-height: 50px;">' : '';
+    $imgHtml = !empty($p['image']) ? '<img src="' . BASE_URL . '/' . htmlspecialchars($p['image']) . '" style="max-height: 50px;">' : '';
     $rows_html .= '<tr>
         <td>' . $imgHtml . '</td>
         <td>' . htmlspecialchars($p['code']) . '</td>
