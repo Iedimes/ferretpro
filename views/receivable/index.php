@@ -6,71 +6,8 @@ $action = $_GET['action'] ?? 'list';
 $client_id = $_GET['client'] ?? null;
 $filter = $_GET['filter'] ?? null;
 
-if ($action === 'pay' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $account_id = $_POST['account_id'] ?? null;
-    $amount = floatval($_POST['amount'] ?? 0);
-    $payment_method = $_POST['payment_method'] ?? 'efectivo';
-    $reference = trim($_POST['reference'] ?? '');
-    $notes = trim($_POST['notes'] ?? '');
-    
-    try {
-        db()->beginTransaction();
-        
-        $account = db()->prepare("SELECT * FROM accounts_receivable WHERE id = ?");
-        $account->execute([$account_id]);
-        $accountData = $account->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$accountData) {
-            throw new Exception("Cuenta por cobrar no encontrada");
-        }
-        
-        $newPaid = $accountData['paid_amount'] + $amount;
-        $newStatus = $newPaid >= $accountData['amount'] ? 'cancelada' : 'parcial';
-        
-        $stmt = db()->prepare("UPDATE accounts_receivable SET paid_amount = ?, status = ? WHERE id = ?");
-        $stmt->execute([$newPaid, $newStatus, $account_id]);
-        
-        $stmt = db()->prepare("INSERT INTO payments (account_receivable_id, user_id, amount, payment_method, reference, notes) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$account_id, auth(), $amount, $payment_method, $reference, $notes]);
-        
-        if ($newPaid >= $accountData['amount']) {
-            $stmt = db()->prepare("UPDATE clients SET balance = balance - ? WHERE id = ?");
-            $stmt->execute([$accountData['amount'], $accountData['client_id']]);
-            
-            $stmt = db()->prepare("UPDATE sales SET status = 'pagada' WHERE id = ?");
-            $stmt->execute([$accountData['sale_id']]);
-        }
-        
-        db()->commit();
-        flash('success', 'Cobro registrado correctamente');
-        
-    } catch (Exception $e) {
-        db()->rollBack();
-        flash('error', 'Error: ' . $e->getMessage());
-    }
-    redirect('?page=receivable');
-}
-
-$accounts = db()->query("
-    SELECT ar.*, c.name as client_name, c.phone as client_phone, s.id as sale_id
-    FROM accounts_receivable ar
-    JOIN clients c ON ar.client_id = c.id
-    LEFT JOIN sales s ON ar.sale_id = s.id
-    WHERE ar.status != 'cancelada'
-    ORDER BY ar.due_date ASC
-")->fetchAll(PDO::FETCH_ASSOC);
-
 if ($client_id) {
     $accounts = array_filter($accounts, fn($a) => $a['client_id'] == $client_id);
-}
-
-if ($filter === '10days') {
-    $today = new DateTime();
-    $accounts = array_filter($accounts, function($a) use ($today) {
-        $dueDate = new DateTime($a['due_date']);
-        $days = $today->diff($dueDate)->days;
-        return $days >= 0 && $days <= 10;
-    });
 }
 
 $pageTitle = $filter === '10days' ? 'Cuentas por Cobrar (Próximos 10 días)' : 'Cuentas por Cobrar';

@@ -4,18 +4,6 @@ $pageTitle = 'Cuentas por Pagar';
 
 $filter = $_GET['filter'] ?? null;
 
-$accounts = db()->query("SELECT ap.*, p.name as provider_name FROM accounts_payable ap JOIN providers p ON ap.provider_id = p.id WHERE ap.status != 'cancelada' ORDER BY ap.due_date ASC")->fetchAll(PDO::FETCH_ASSOC);
-
-if ($filter === '10days' && !empty($accounts)) {
-    $today = new DateTime();
-    $accounts = array_filter($accounts, function($a) use ($today) {
-        $dueDate = new DateTime($a['due_date']);
-        $days = $today->diff($dueDate)->days;
-        return $days >= 0 && $days <= 10;
-    });
-    $pageTitle = 'Cuentas por Pagar (Próximos 10 días)';
-}
-
 $content = '
 <div class="row mb-3">
     <div class="col-md-6">
@@ -26,7 +14,7 @@ $content = '
 $content .= '
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Cuentas por Pagar</h5>
+        <h5 class="mb-0">' . $pageTitle . '</h5>
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">

@@ -29,30 +29,30 @@ if (!empty($overduePayables)) {
     }
 }
 
-// Calcular cuentas por cobrar próximos 10 días
+// Calcular cuentas por cobrar próximos 10 días (solo las que NO están vencidas)
 $receivableSoon = 0;
 $receivableCountSoon = 0;
 if (!empty($overdueReceivables)) {
+    $today = new DateTime();
     foreach ($overdueReceivables as $rec) {
         $dueDate = new DateTime($rec['due_date']);
-        $today = new DateTime();
-        $days = $today->diff($dueDate)->days;
-        if ($days >= 0 && $days <= 10) {
+        // Solo incluir cuentas que NO están vencidas Y vencen en los próximos 10 días
+        if ($dueDate >= $today && $today->diff($dueDate)->days <= 10) {
             $receivableSoon += $rec['amount'];
             $receivableCountSoon++;
         }
     }
 }
 
-// Calcular cuentas por pagar próximos 10 días
+// Calcular cuentas por pagar próximos 10 días (solo las que NO están vencidas)
 $payableSoon = 0;
 $payableCountSoon = 0;
 if (!empty($overduePayables)) {
+    $today = new DateTime();
     foreach ($overduePayables as $pay) {
         $dueDate = new DateTime($pay['due_date']);
-        $today = new DateTime();
-        $days = $today->diff($dueDate)->days;
-        if ($days >= 0 && $days <= 10) {
+        // Solo incluir cuentas que NO están vencidas Y vencen en los próximos 10 días
+        if ($dueDate >= $today && $today->diff($dueDate)->days <= 10) {
             $payableSoon += $pay['amount'];
             $payableCountSoon++;
         }

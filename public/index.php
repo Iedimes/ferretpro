@@ -311,6 +311,23 @@ switch ($page) {
         
     case 'receivable':
         $accounts = db()->query("SELECT ar.*, c.name as client_name FROM accounts_receivable ar JOIN clients c ON ar.client_id = c.id WHERE ar.status != 'cancelada' ORDER BY ar.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+        
+        $filter = $_GET['filter'] ?? null;
+        $client_id = $_GET['client'] ?? null;
+        
+        if ($client_id) {
+            $accounts = array_filter($accounts, fn($a) => $a['client_id'] == $client_id);
+        }
+        
+        if ($filter === '10days' && !empty($accounts)) {
+            $today = new DateTime();
+            $accounts = array_filter($accounts, function($a) use ($today) {
+                $dueDate = new DateTime($a['due_date']);
+                // Solo incluir cuentas que NO están vencidas Y vencen en los próximos 10 días
+                return $dueDate >= $today && $today->diff($dueDate)->days <= 10;
+            });
+        }
+        
         view('receivable/index', compact('accounts'));
         break;
         
@@ -357,6 +374,17 @@ switch ($page) {
         }
         
         $accounts = db()->query("SELECT ap.*, p.name as provider_name FROM accounts_payable ap JOIN providers p ON ap.provider_id = p.id WHERE ap.status != 'cancelada' ORDER BY ap.due_date ASC")->fetchAll(PDO::FETCH_ASSOC);
+        
+        $filter = $_GET['filter'] ?? null;
+        if ($filter === '10days' && !empty($accounts)) {
+            $today = new DateTime();
+            $accounts = array_filter($accounts, function($a) use ($today) {
+                $dueDate = new DateTime($a['due_date']);
+                // Solo incluir cuentas que NO están vencidas Y vencen en los próximos 10 días
+                return $dueDate >= $today && $today->diff($dueDate)->days <= 10;
+            });
+        }
+        
         view('payable/index', compact('accounts'));
         break;
         
