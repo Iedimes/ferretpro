@@ -4,6 +4,12 @@ $pageTitle = 'Cuentas por Pagar';
 
 $filter = $_GET['filter'] ?? null;
 
+if ($filter === '10days') {
+    $pageTitle = 'Cuentas por Pagar (Próximos 10 días)';
+} elseif ($filter === 'overdue') {
+    $pageTitle = 'Cuentas por Pagar Vencidas';
+}
+
 $content = '
 <div class="row mb-3">
     <div class="col-md-6">

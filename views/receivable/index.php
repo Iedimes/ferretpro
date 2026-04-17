@@ -10,7 +10,11 @@ if ($client_id) {
     $accounts = array_filter($accounts, fn($a) => $a['client_id'] == $client_id);
 }
 
-$pageTitle = $filter === '10days' ? 'Cuentas por Cobrar (Próximos 10 días)' : 'Cuentas por Cobrar';
+if ($filter === '10days') {
+    $pageTitle = 'Cuentas por Cobrar (Próximos 10 días)';
+} elseif ($filter === 'overdue') {
+    $pageTitle = 'Cuentas por Cobrar Vencidas';
+}
 
 $content = '
 <div class="card">

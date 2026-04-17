@@ -328,6 +328,15 @@ switch ($page) {
             });
         }
         
+        if ($filter === 'overdue' && !empty($accounts)) {
+            $today = new DateTime();
+            $accounts = array_filter($accounts, function($a) use ($today) {
+                $dueDate = new DateTime($a['due_date']);
+                // Solo incluir cuentas vencidas
+                return $dueDate < $today;
+            });
+        }
+        
         view('receivable/index', compact('accounts'));
         break;
         
@@ -382,6 +391,15 @@ switch ($page) {
                 $dueDate = new DateTime($a['due_date']);
                 // Solo incluir cuentas que NO están vencidas Y vencen en los próximos 10 días
                 return $dueDate >= $today && $today->diff($dueDate)->days <= 10;
+            });
+        }
+        
+        if ($filter === 'overdue' && !empty($accounts)) {
+            $today = new DateTime();
+            $accounts = array_filter($accounts, function($a) use ($today) {
+                $dueDate = new DateTime($a['due_date']);
+                // Solo incluir cuentas vencidas
+                return $dueDate < $today;
             });
         }
         

@@ -219,7 +219,7 @@ if ($receivableOverdue > 0 || $payableOverdue > 0) {
     $content .= '
 <div class="row mb-4">
     <div class="col-md-3">
-        <a href="?page=receivable" class="text-decoration-none">
+        <a href="?page=receivable&filter=overdue" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--danger);">
                 <div class="card-body">
                     <h6 class="text-muted">Cuentas por Cobrar Vencidas</h6>
@@ -232,7 +232,7 @@ if ($receivableOverdue > 0 || $payableOverdue > 0) {
     if ($payableOverdue > 0) {
         $content .= '
     <div class="col-md-3">
-        <a href="?page=payable" class="text-decoration-none">
+        <a href="?page=payable&filter=overdue" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--danger);">
                 <div class="card-body">
                     <h6 class="text-muted">Cuentas por Pagar Vencidas</h6>
