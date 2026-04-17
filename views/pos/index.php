@@ -36,9 +36,11 @@ foreach ($products as $p) {
     $stock_warning = $p['stock'] <= $p['min_stock'] ? 'border-warning border-2' : '';
     $iva_label = $p['iva'] == 0 ? 'Exento' : $p['iva'] . '%';
     $barcode = isset($p['barcode']) ? $p['barcode'] : '';
+    $imgHtml = !empty($p['image']) ? '<img src="' . BASE_URL . '/public/' . htmlspecialchars($p['image']) . '" style="max-height: 80px; object-fit: contain;" class="mb-2">' : '<div class="mb-2" style="height: 80px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 5px;"><i class="bi bi-image text-muted" style="font-size: 2rem;"></i></div>';
     $content .= '<div class="col-md-3 col-6 mb-2 product-card" data-category="' . ($p['category_id'] ?? '') . '" data-min-stock="' . $p['min_stock'] . '">
-        <div class="card h-100 product-item ' . $stock_warning . '" style="cursor: pointer;" data-id="' . $p['id'] . '" data-name="' . htmlspecialchars($p['name']) . '" data-price="' . $p['sale_price'] . '" data-wholesale-price="' . ($p['wholesale_price'] ?? $p['sale_price']) . '" data-stock="' . $p['stock'] . '" data-min-stock="' . $p['min_stock'] . '" data-code="' . htmlspecialchars($p['code']) . '" data-barcode="' . htmlspecialchars($barcode) . '" data-iva="' . $p['iva'] . '">
+        <div class="card h-100 product-item ' . $stock_warning . '" style="cursor: pointer;" data-id="' . $p['id'] . '" data-name="' . htmlspecialchars($p['name']) . '" data-price="' . $p['sale_price'] . '" data-wholesale-price="' . ($p['wholesale_price'] ?? $p['sale_price']) . '" data-stock="' . $p['stock'] . '" data-min-stock="' . $p['min_stock'] . '" data-code="' . htmlspecialchars($p['code']) . '" data-barcode="' . htmlspecialchars($barcode) . '" data-iva="' . $p['iva'] . '" data-image="' . htmlspecialchars($p['image'] ?? '') . '">
             <div class="card-body text-center p-2">
+                ' . $imgHtml . '
                 <h6 class="mb-1 text-truncate">' . htmlspecialchars($p['name']) . '</h6>
                 <p class="text-muted small mb-1">' . $p['code'] . '</p>
                 <h5 class="text-primary mb-1">' . Format::money($p['sale_price']) . '</h5>
