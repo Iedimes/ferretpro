@@ -119,18 +119,7 @@ $content = '
                     <small class="text-muted">productos</small>
                 </div>
             </div>
-        </a>
-    </div>
-    <div class="col-md-3">
-        <a href="?page=receivable" class="text-decoration-none">
-            <div class="card stat-card" style="border-color: var(--danger);">
-                <div class="card-body">
-                    <h6 class="text-muted">Cuentas por Cobrar (Total)</h6>
-                    <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
-                    <small class="text-muted">' . $totalReceivableCount . ' cuentas</small>
-                </div>
-            </div>
-        </a>
+</a>
     </div>
 </div>
 
@@ -142,6 +131,17 @@ $content = '
                     <h6 class="text-muted">Cuentas por Cobrar (7 días)</h6>
                     <h3 class="mb-0">' . Format::money($receivableSoon) . '</h3>
                     <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=receivable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--danger);">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas por Cobrar (Total)</h6>
+                    <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
+                    <small class="text-muted">' . $totalReceivableCount . ' cuentas</small>
                 </div>
             </div>
         </a>
@@ -168,6 +168,9 @@ $content = '
             </div>
 </a>
     </div>
+</div>
+
+<div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=expenses" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--secondary);">
@@ -179,7 +182,6 @@ $content = '
             </div>
         </a>
     </div>
-</div>
 
 <div class="row mb-4">
     <div class="col-md-3">
