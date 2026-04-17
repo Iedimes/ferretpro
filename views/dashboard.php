@@ -8,7 +8,26 @@ $totalVentasMes = $salesMonth['COALESCE(SUM(total), 0)'] ?? 0;
 $cantidadVentasMes = $salesMonth['COUNT(*)'] ?? 0;
 $stockBajo = $productsLow['COUNT(*)'] ?? 0;
 $clientesDeuda = $clientsDebt['COUNT(*)'] ?? 0;
-$totalDeuda = $clientsDebt['COALESCE(SUM(balance), 0)'] ?? 0;
+
+// Calcular total CxC desde accounts_receivable
+$totalDeuda = 0;
+$totalReceivableCount = 0;
+if (!empty($overdueReceivables)) {
+    foreach ($overdueReceivables as $rec) {
+        $totalDeuda += $rec['amount'];
+        $totalReceivableCount++;
+    }
+}
+
+// Calcular total CxP desde accounts_payable
+$totalPayableValue = 0;
+$totalPayableCount = 0;
+if (!empty($overduePayables)) {
+    foreach ($overduePayables as $pay) {
+        $totalPayableValue += $pay['amount'];
+        $totalPayableCount++;
+    }
+}
 
 // Calcular cuentas por cobrar próximos 7 días
 $receivableSoon = 0;
@@ -108,7 +127,7 @@ $content = '
                 <div class="card-body">
                     <h6 class="text-muted">Cuentas por Cobrar (Total)</h6>
                     <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
-                    <small class="text-muted">' . $clientesDeuda . ' clientes</small>
+                    <small class="text-muted">' . $totalReceivableCount . ' cuentas</small>
                 </div>
             </div>
         </a>
@@ -132,8 +151,8 @@ $content = '
             <div class="card stat-card" style="border-color: var(--warning);">
                 <div class="card-body">
                     <h6 class="text-muted">Cuentas por Pagar (Total)</h6>
-                    <h3 class="mb-0">' . Format::money($totalPayable['total'] ?? 0) . '</h3>
-                    <small class="text-muted">' . ($totalPayable['count'] ?? 0) . ' cuentas</small>
+                    <h3 class="mb-0">' . Format::money($totalPayableValue) . '</h3>
+                    <small class="text-muted">' . $totalPayableCount . ' cuentas</small>
                 </div>
             </div>
         </a>

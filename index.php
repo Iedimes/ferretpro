@@ -130,6 +130,7 @@ if ($uri === '/dashboard') {
     $salesToday = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE DATE(created_at) = DATE('now')")->fetch(PDO::FETCH_ASSOC);
     $productsLow = db()->query("SELECT COUNT(*) FROM products WHERE stock <= min_stock AND active = 1")->fetch(PDO::FETCH_ASSOC);
     $clientsDebt = db()->query("SELECT COUNT(*), COALESCE(SUM(balance), 0) FROM clients WHERE balance > 0")->fetch(PDO::FETCH_ASSOC);
+    $totalReceivable = db()->query("SELECT COUNT(*) as cnt, COALESCE(SUM(amount - COALESCE(paid_amount, 0)), 0) as total FROM accounts_receivable WHERE status = 'pendiente'")->fetch(PDO::FETCH_ASSOC);
     $salesMonth = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
     $recentSales = db()->query("SELECT s.*, u.name as user_name, c.name as client_name FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.created_at DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
     $topProducts = db()->query("SELECT p.name, SUM(sd.quantity) as quantity_sold, SUM(sd.subtotal) as total_vendido FROM sale_details sd JOIN products p ON sd.product_id = p.id JOIN sales s ON sd.sale_id = s.id WHERE s.created_at >= date('now', '-30 days') GROUP BY p.id ORDER BY total_vendido DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
@@ -137,7 +138,7 @@ if ($uri === '/dashboard') {
     $expensesMonth = db()->query("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
     $overdueReceivables = db()->query("SELECT * FROM accounts_receivable WHERE status = 'pendiente'")->fetchAll(PDO::FETCH_ASSOC);
     $overduePayables = db()->query("SELECT * FROM accounts_payable WHERE status = 'pendiente'")->fetchAll(PDO::FETCH_ASSOC);
-    $totalPayable = db()->query("SELECT COALESCE(SUM(amount - COALESCE(paid_amount, 0)), 0) as total, COUNT(*) as count FROM accounts_payable WHERE status = 'pendiente'")->fetch(PDO::FETCH_ASSOC);
+    $totalPayable = db()->query("SELECT COALESCE(SUM(amount - COALESCE(paid_amount, 0)), 0) as total, COUNT(*) as cnt FROM accounts_payable WHERE status = 'pendiente'")->fetch(PDO::FETCH_ASSOC);
     
     require __DIR__ . '/views/dashboard.php';
     exit;
