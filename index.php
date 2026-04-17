@@ -132,7 +132,12 @@ if ($uri === '/dashboard') {
     $clientsDebt = db()->query("SELECT COUNT(*), COALESCE(SUM(balance), 0) FROM clients WHERE balance > 0")->fetch(PDO::FETCH_ASSOC);
     $salesMonth = db()->query("SELECT COUNT(*), COALESCE(SUM(total), 0) FROM sales WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
     $recentSales = db()->query("SELECT s.*, u.name as user_name, c.name as client_name FROM sales s LEFT JOIN users u ON s.user_id = u.id LEFT JOIN clients c ON s.client_id = c.id ORDER BY s.created_at DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
-    $topProducts = db()->query("SELECT p.name, SUM(sd.quantity) as total_qty FROM sale_details sd JOIN products p ON sd.product_id = p.id JOIN sales s ON sd.sale_id = s.id WHERE s.created_at >= date('now', '-7 days') GROUP BY p.id ORDER BY total_qty DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+    $topProducts = db()->query("SELECT p.name, SUM(sd.quantity) as quantity_sold, SUM(sd.subtotal) as total_vendido FROM sale_details sd JOIN products p ON sd.product_id = p.id JOIN sales s ON sd.sale_id = s.id WHERE s.created_at >= date('now', '-30 days') GROUP BY p.id ORDER BY total_vendido DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+    $salesByUser = db()->query("SELECT u.name, COUNT(*) as ventas, COALESCE(SUM(s.total), 0) as total FROM users u LEFT JOIN sales s ON u.id = s.user_id AND s.created_at >= date('now', '-30 days') GROUP BY u.id ORDER BY total DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $expensesMonth = db()->query("SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')")->fetch(PDO::FETCH_ASSOC);
+    $overdueReceivables = db()->query("SELECT * FROM accounts_receivable WHERE status = 'pendiente'")->fetchAll(PDO::FETCH_ASSOC);
+    $overduePayables = db()->query("SELECT * FROM accounts_payable WHERE status = 'pendiente'")->fetchAll(PDO::FETCH_ASSOC);
+    $totalPayable = db()->query("SELECT COALESCE(SUM(amount - COALESCE(paid_amount, 0)), 0) as total, COUNT(*) as count FROM accounts_payable WHERE status = 'pendiente'")->fetch(PDO::FETCH_ASSOC);
     
     require __DIR__ . '/views/dashboard.php';
     exit;

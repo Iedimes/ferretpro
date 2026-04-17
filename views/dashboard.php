@@ -40,6 +40,33 @@ if (!empty($overduePayables)) {
     }
 }
 
+// Calcular cuentas vencidas (ya pasadas)
+$receivableOverdue = 0;
+$receivableCountOverdue = 0;
+if (!empty($overdueReceivables)) {
+    foreach ($overdueReceivables as $rec) {
+        $dueDate = new DateTime($rec['due_date']);
+        $today = new DateTime();
+        if ($today > $dueDate) {
+            $receivableOverdue += $rec['amount'];
+            $receivableCountOverdue++;
+        }
+    }
+}
+
+$payableOverdue = 0;
+$payableCountOverdue = 0;
+if (!empty($overduePayables)) {
+    foreach ($overduePayables as $pay) {
+        $dueDate = new DateTime($pay['due_date']);
+        $today = new DateTime();
+        if ($today > $dueDate) {
+            $payableOverdue += $pay['amount'];
+            $payableCountOverdue++;
+        }
+    }
+}
+
 $content = '
 <div class="row mb-4">
     <div class="col-md-3">
@@ -79,9 +106,9 @@ $content = '
         <a href="?page=receivable" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--danger);">
                 <div class="card-body">
-                    <h6 class="text-muted">CxC Total</h6>
+                    <h6 class="text-muted">Cuentas por Cobrar (Total)</h6>
                     <h3 class="mb-0">' . Format::money($totalDeuda) . '</h3>
-                    <small class="text-muted">' . $clientesDeuda . ' clfes.</small>
+                    <small class="text-muted">' . $clientesDeuda . ' clientes</small>
                 </div>
             </div>
         </a>
@@ -93,7 +120,7 @@ $content = '
         <a href="?page=receivable" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--info);">
                 <div class="card-body">
-                    <h6 class="text-muted">CxC 7 días</h6>
+                    <h6 class="text-muted">Cuentas por Cobrar (7 días)</h6>
                     <h3 class="mb-0">' . Format::money($receivableSoon) . '</h3>
                     <small class="text-muted">' . $receivableCountSoon . ' cuentas</small>
                 </div>
@@ -102,9 +129,20 @@ $content = '
     </div>
     <div class="col-md-3">
         <a href="?page=payable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--warning);">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas por Pagar (Total)</h6>
+                    <h3 class="mb-0">' . Format::money($totalPayable['total'] ?? 0) . '</h3>
+                    <small class="text-muted">' . ($totalPayable['count'] ?? 0) . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="?page=payable" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--info);">
                 <div class="card-body">
-                    <h6 class="text-muted">CxP 7 días</h6>
+                    <h6 class="text-muted">Cuentas por Pagar (7 días)</h6>
                     <h3 class="mb-0">' . Format::money($payableSoon) . '</h3>
                     <small class="text-muted">' . $payableCountSoon . ' cuentas</small>
                 </div>
@@ -142,6 +180,9 @@ $content = '
             </div>
         </a>
     </div>
+</div>
+
+<div class="row mb-4">
     <div class="col-md-3">
         <a href="?page=backup" class="text-decoration-none">
             <div class="card stat-card" style="border-color: var(--info);">
@@ -153,8 +194,44 @@ $content = '
             </div>
         </a>
     </div>
-</div>
+</div>';
 
+if ($receivableOverdue > 0 || $payableOverdue > 0) {
+    $content .= '
+<div class="row mb-4">';
+    if ($receivableOverdue > 0) {
+        $content .= '
+    <div class="col-md-3">
+        <a href="?page=receivable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--danger);">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas por Cobrar Vencidas</h6>
+                    <h3 class="mb-0 text-danger">' . Format::money($receivableOverdue) . '</h3>
+                    <small class="text-muted">' . $receivableCountOverdue . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>';
+    }
+    if ($payableOverdue > 0) {
+        $content .= '
+    <div class="col-md-3">
+        <a href="?page=payable" class="text-decoration-none">
+            <div class="card stat-card" style="border-color: var(--danger);">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas por Pagar Vencidas</h6>
+                    <h3 class="mb-0 text-danger">' . Format::money($payableOverdue) . '</h3>
+                    <small class="text-muted">' . $payableCountOverdue . ' cuentas</small>
+                </div>
+            </div>
+        </a>
+    </div>';
+    }
+    $content .= '
+</div>';
+}
+
+$content .= '
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
