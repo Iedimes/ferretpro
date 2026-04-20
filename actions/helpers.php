@@ -81,3 +81,13 @@ function formatDate($date) {
 function formatDateTime($date) {
     return date('d/m/Y H:i', strtotime($date));
 }
+
+function getDefaultBranchAndPOS() {
+    $defaultBranchId = intval(config('default_branch_id', 1));
+    $defaultPosTerminalId = intval(config('default_pos_terminal_id', 1));
+    
+    return [
+        'branch_id' => $defaultBranchId,
+        'pos_terminal_id' => $defaultPosTerminalId
+    ];
+}

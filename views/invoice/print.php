@@ -42,8 +42,18 @@ $companyDocument = $settings['company_document'] ?? '';
 $companyAddress = $settings['company_address'] ?? '';
 $companyActivity = $settings['company_activity'] ?? 'COMERCIO AL POR MENOR DE FERRETERÍA Y MATERIALES DE CONSTRUCCIÓN';
 
-$establishment = str_pad($settings['invoice_establishment'] ?? '001', 3, '0', STR_PAD_LEFT);
-$pos = str_pad($settings['invoice_pos'] ?? '001', 3, '0', STR_PAD_LEFT);
+// Fetch branch and POS terminal information from the sale
+$branchStmt = db()->prepare("SELECT b.establishment_code FROM branches b WHERE b.id = ?");
+$branchStmt->execute([$sale['branch_id'] ?? 1]);
+$branch = $branchStmt->fetch(PDO::FETCH_ASSOC);
+
+$posStmt = db()->prepare("SELECT p.pos_code FROM pos_terminals p WHERE p.id = ?");
+$posStmt->execute([$sale['pos_terminal_id'] ?? 1]);
+$posTerminal = $posStmt->fetch(PDO::FETCH_ASSOC);
+
+// Use branch and POS codes from database, fallback to settings if not available
+$establishment = str_pad($branch['establishment_code'] ?? $settings['invoice_establishment'] ?? '001', 3, '0', STR_PAD_LEFT);
+$pos = str_pad($posTerminal['pos_code'] ?? $settings['invoice_pos'] ?? '001', 3, '0', STR_PAD_LEFT);
 $invoiceNumber = $establishment . '-' . $pos . '-N° ' . str_pad($sale_id, 7, '0', STR_PAD_LEFT);
 
 $saleTypeLabel = $sale['type'] === 'contado' ? 'X' : '';

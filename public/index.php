@@ -773,8 +773,11 @@ switch ($page) {
             $details->execute([$quote_id]);
             $details = $details->fetchAll(PDO::FETCH_ASSOC);
             
-            $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, subtotal, discount, total, type, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, 'contado', 'efectivo', 'pagada', datetime('now'))");
-            $stmt->execute([$quote['user_id'], $quote['client_id'], $quote['subtotal'], $quote['discount'], $quote['total']]);
+            // Get default branch and POS terminal
+            $branchPOS = getDefaultBranchAndPOS();
+            
+            $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, subtotal, discount, total, type, payment_method, status, branch_id, pos_terminal_id, created_at) VALUES (?, ?, ?, ?, ?, 'contado', 'efectivo', 'pagada', ?, ?, datetime('now'))");
+            $stmt->execute([$quote['user_id'], $quote['client_id'], $quote['subtotal'], $quote['discount'], $quote['total'], $branchPOS['branch_id'], $branchPOS['pos_terminal_id']]);
             $saleId = db()->lastInsertId();
             
             foreach ($details as $item) {
@@ -1368,9 +1371,12 @@ case 'sale_products':
                 // Determinar status según tipo de venta
                 $saleStatus = ($saleType === 'contado') ? 'pagada' : 'pendiente';
                 
+                // Get default branch and POS terminal
+                $branchPOS = getDefaultBranchAndPOS();
+                
                 // Crear venta
-                $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))");
-                $stmt->execute([$userId, $clientId ?: null, $saleType, $paymentMethod, $subtotal, $discountAmount, $total, $deliveryType, $saleStatus]);
+                $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, branch_id, pos_terminal_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))");
+                $stmt->execute([$userId, $clientId ?: null, $saleType, $paymentMethod, $subtotal, $discountAmount, $total, $deliveryType, $saleStatus, $branchPOS['branch_id'], $branchPOS['pos_terminal_id']]);
                 $saleId = db()->lastInsertId();
                 
                 // Agregar items a la venta

@@ -24,9 +24,12 @@ if ($_SERVER['REQUEST_URI'] === '/pos/process' && $_SERVER['REQUEST_METHOD'] ===
     try {
         db()->beginTransaction();
         
-        $stmt = db()->prepare("INSERT INTO sales (client_id, user_id, type, status, subtotal, discount, total, payment_method, delivery_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        // Get default branch and POS terminal
+        $branchPOS = getDefaultBranchAndPOS();
+        
+        $stmt = db()->prepare("INSERT INTO sales (client_id, user_id, type, status, subtotal, discount, total, payment_method, delivery_type, branch_id, pos_terminal_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $status = $sale_type === 'credito' ? 'pendiente' : 'pagada';
-        $stmt->execute([$client_id, auth(), $sale_type, $status, $subtotal, $discount_amount, $total, $payment_method, $delivery_type]);
+        $stmt->execute([$client_id, auth(), $sale_type, $status, $subtotal, $discount_amount, $total, $payment_method, $delivery_type, $branchPOS['branch_id'], $branchPOS['pos_terminal_id']]);
         $sale_id = db()->lastInsertId();
         
         foreach ($items as $item) {
