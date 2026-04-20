@@ -91,3 +91,31 @@ function getDefaultBranchAndPOS() {
         'pos_terminal_id' => $defaultPosTerminalId
     ];
 }
+
+function getCurrentUserBranchAndPOS() {
+    // First try to get from session
+    if (isset($_SESSION['branch_id']) && isset($_SESSION['pos_terminal_id'])) {
+        return [
+            'branch_id' => intval($_SESSION['branch_id']),
+            'pos_terminal_id' => intval($_SESSION['pos_terminal_id'])
+        ];
+    }
+    
+    // Then try to get from database
+    if (auth()) {
+        $stmt = db()->prepare("SELECT branch_id, pos_terminal_id FROM users WHERE id = ?");
+        $stmt->execute([auth()]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user && $user['branch_id'] && $user['pos_terminal_id']) {
+            $_SESSION['branch_id'] = $user['branch_id'];
+            $_SESSION['pos_terminal_id'] = $user['pos_terminal_id'];
+            return [
+                'branch_id' => intval($user['branch_id']),
+                'pos_terminal_id' => intval($user['pos_terminal_id'])
+            ];
+        }
+    }
+    
+    // Fallback to default
+    return getDefaultBranchAndPOS();
+}

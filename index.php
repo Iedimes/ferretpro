@@ -85,8 +85,8 @@ if ($uri === '/pos/process' && $method === 'POST') {
         error_log("sale_type a guardar: " . $sale_type);
         error_log("status calculado: " . ($sale_type === 'credito' ? 'pendiente' : 'pagada'));
         
-        // Get default branch and POS terminal
-        $branchPOS = getDefaultBranchAndPOS();
+        // Get current user's branch and POS terminal
+        $branchPOS = getCurrentUserBranchAndPOS();
         
         $stmt = db()->prepare("INSERT INTO sales (client_id, user_id, type, status, subtotal, discount, total, payment_method, delivery_type, branch_id, pos_terminal_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $status = $sale_type === 'credito' ? 'pendiente' : 'pagada';

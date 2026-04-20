@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_URI'] === '/pos/process' && $_SERVER['REQUEST_METHOD'] ===
     try {
         db()->beginTransaction();
         
-        // Get default branch and POS terminal
-        $branchPOS = getDefaultBranchAndPOS();
+        // Get current user's branch and POS terminal
+        $branchPOS = getCurrentUserBranchAndPOS();
         
         $stmt = db()->prepare("INSERT INTO sales (client_id, user_id, type, status, subtotal, discount, total, payment_method, delivery_type, branch_id, pos_terminal_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $status = $sale_type === 'credito' ? 'pendiente' : 'pagada';

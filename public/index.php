@@ -72,6 +72,34 @@ function getDefaultBranchAndPOS() {
     ];
 }
 
+function getCurrentUserBranchAndPOS() {
+    // First try to get from session
+    if (isset($_SESSION['branch_id']) && isset($_SESSION['pos_terminal_id'])) {
+        return [
+            'branch_id' => intval($_SESSION['branch_id']),
+            'pos_terminal_id' => intval($_SESSION['pos_terminal_id'])
+        ];
+    }
+    
+    // Then try to get from database
+    if (auth()) {
+        $stmt = db()->prepare("SELECT branch_id, pos_terminal_id FROM users WHERE id = ?");
+        $stmt->execute([auth()]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user && $user['branch_id'] && $user['pos_terminal_id']) {
+            $_SESSION['branch_id'] = $user['branch_id'];
+            $_SESSION['pos_terminal_id'] = $user['pos_terminal_id'];
+            return [
+                'branch_id' => intval($user['branch_id']),
+                'pos_terminal_id' => intval($user['pos_terminal_id'])
+            ];
+        }
+    }
+    
+    // Fallback to default
+    return getDefaultBranchAndPOS();
+}
+
 $page = $_GET['page'] ?? 'home';
 $action = $_GET['action'] ?? 'list';
 
@@ -98,7 +126,15 @@ if ($page === 'login_post' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         Auth::resetFailedAttempts($user['id']);
         Auth::logLoginAttempt($user['id'], 'success');
         
-        header('Location: ?page=dashboard');
+        // Check if user has branch_id assigned
+        if ($user['branch_id'] && $user['pos_terminal_id']) {
+            $_SESSION['branch_id'] = $user['branch_id'];
+            $_SESSION['pos_terminal_id'] = $user['pos_terminal_id'];
+            header('Location: ?page=dashboard');
+        } else {
+            // Redirect to branch/POS selection
+            header('Location: ?page=select_branch_pos');
+        }
         exit;
     }
     
@@ -202,6 +238,55 @@ if ($page === 'test_data') {
 
 if ($page === 'test_caja') {
     include dirname(__DIR__) . '/views/test_caja.php';
+    exit;
+}
+
+// Handle branch/POS selection
+if ($page === 'select_branch_pos') {
+    if (!auth()) {
+        header('Location: ?page=login');
+        exit;
+    }
+    
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $branch_id = intval($_POST['branch_id'] ?? 0);
+        $pos_terminal_id = intval($_POST['pos_terminal_id'] ?? 0);
+        
+        if ($branch_id > 0 && $pos_terminal_id > 0) {
+            // Update user with branch and POS terminal
+            $stmt = db()->prepare("UPDATE users SET branch_id = ?, pos_terminal_id = ? WHERE id = ?");
+            $stmt->execute([$branch_id, $pos_terminal_id, auth()]);
+            
+            // Store in session
+            $_SESSION['branch_id'] = $branch_id;
+            $_SESSION['pos_terminal_id'] = $pos_terminal_id;
+            
+            Flash::success('Sucursal y caja seleccionadas correctamente');
+            header('Location: ?page=dashboard');
+        } else {
+            Flash::error('Debes seleccionar una sucursal y una caja');
+            header('Location: ?page=select_branch_pos');
+        }
+        exit;
+    }
+    
+    include dirname(__DIR__) . '/views/select_branch_pos.php';
+    exit;
+}
+
+// API endpoint for getting POS terminals by branch
+if ($page === 'api' && $action === 'get_pos_terminals') {
+    header('Content-Type: application/json');
+    $branch_id = intval($_GET['branch_id'] ?? 0);
+    
+    if ($branch_id > 0) {
+        $stmt = db()->prepare("SELECT id, pos_code, terminal_name FROM pos_terminals WHERE branch_id = ? AND is_active = 1 ORDER BY pos_code");
+        $stmt->execute([$branch_id]);
+        $terminals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($terminals);
+    } else {
+        echo json_encode([]);
+    }
     exit;
 }
 
@@ -790,8 +875,8 @@ switch ($page) {
             $details->execute([$quote_id]);
             $details = $details->fetchAll(PDO::FETCH_ASSOC);
             
-            // Get default branch and POS terminal
-            $branchPOS = getDefaultBranchAndPOS();
+            // Get current user's branch and POS terminal
+            $branchPOS = getCurrentUserBranchAndPOS();
             
             $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, subtotal, discount, total, type, payment_method, status, branch_id, pos_terminal_id, created_at) VALUES (?, ?, ?, ?, ?, 'contado', 'efectivo', 'pagada', ?, ?, datetime('now'))");
             $stmt->execute([$quote['user_id'], $quote['client_id'], $quote['subtotal'], $quote['discount'], $quote['total'], $branchPOS['branch_id'], $branchPOS['pos_terminal_id']]);
@@ -1388,8 +1473,8 @@ case 'sale_products':
                 // Determinar status según tipo de venta
                 $saleStatus = ($saleType === 'contado') ? 'pagada' : 'pendiente';
                 
-                // Get default branch and POS terminal
-                $branchPOS = getDefaultBranchAndPOS();
+                // Get current user's branch and POS terminal
+                $branchPOS = getCurrentUserBranchAndPOS();
                 
                 // Crear venta
                 $stmt = db()->prepare("INSERT INTO sales (user_id, client_id, type, payment_method, subtotal, discount, total, delivery_type, status, branch_id, pos_terminal_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))");
