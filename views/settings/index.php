@@ -37,14 +37,34 @@ $content = '
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label">Establecimiento (Sucursal)</label>
-                    <input type="text" name="invoice_establishment" class="form-control" placeholder="001" value="' . htmlspecialchars($settings['invoice_establishment'] ?? '001') . '">
-                    <small class="text-muted">001 = Casa Matriz, 002 = Sucursal 2, etc.</small>
+                    <label class="form-label">Sucursal Predeterminada</label>
+                    <select name="default_branch_id" class="form-select" onchange="updatePosList()">
+                        <option value="">-- Seleccionar --</option>';
+
+$branches = db()->query("SELECT * FROM branches WHERE active = 1 ORDER BY establishment_code")->fetchAll(PDO::FETCH_ASSOC);
+foreach ($branches as $b) {
+    $selected = ($settings['default_branch_id'] ?? '') == $b['id'] ? 'selected' : '';
+    $content .= '<option value="' . $b['id'] . '" ' . $selected . '>' . htmlspecialchars($b['name']) . ' (' . $b['establishment_code'] . ')</option>';
+}
+
+$content .= '</select>
+                    <small class="text-muted">Se usa como predeterminada al abrir POS</small>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Punto de Expedición (Caja)</label>
-                    <input type="text" name="invoice_pos" class="form-control" placeholder="001" value="' . htmlspecialchars($settings['invoice_pos'] ?? '001') . '">
-                    <small class="text-muted">001 = Caja 1, 002 = Caja 2, etc.</small>
+                    <label class="form-label">Punto de Venta Predeterminado</label>
+                    <select name="default_pos_terminal_id" id="posSelect" class="form-select">
+                        <option value="">-- Seleccionar --</option>';
+
+if ($settings['default_branch_id'] ?? '') {
+    $posTerminals = db()->query("SELECT * FROM pos_terminals WHERE branch_id = " . intval($settings['default_branch_id']) . " AND is_active = 1 ORDER BY pos_code")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($posTerminals as $pos) {
+        $selected = ($settings['default_pos_terminal_id'] ?? '') == $pos['id'] ? 'selected' : '';
+        $content .= '<option value="' . $pos['id'] . '" ' . $selected . '>' . htmlspecialchars($pos['terminal_name'] ?? 'Caja ' . $pos['pos_code']) . ' (' . $pos['pos_code'] . ')</option>';
+    }
+}
+
+$content .= '</select>
+                    <small class="text-muted">Se usa como predeterminada al abrir POS</small>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Actividad Económica</label>
@@ -61,6 +81,9 @@ $content = '
                         <option value="letter"' . ($settings['invoice_type'] ?? '' === 'letter' ? 'selected' : '') . '>Carta (A4)</option>
                         <option value="thermal"' . ($settings['invoice_type'] ?? '' === 'thermal' ? 'selected' : '') . '>Termal (58mm)</option>
                     </select>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle"></i> Para gestionar sucursales y puntos de venta, ir a <a href="?page=branches">Sucursales</a> y <a href="?page=pos_terminals">Cajas</a>
                 </div>
                 <div class="mt-3">
                     <button type="submit" class="btn btn-primary">Guardar Cambios</button>
@@ -104,4 +127,30 @@ $content = '
         <p><strong>Versión:</strong> 1.0.0</p>
         <p><strong>Usuario:</strong> ' . (user()['name'] ?? '') . '</p>
     </div>
-</div>';
+</div>
+
+<script>
+function updatePosList() {
+    const branchId = document.querySelector("select[name=\"default_branch_id\"]").value;
+    const posSelect = document.getElementById("posSelect");
+    
+    if (!branchId) {
+        posSelect.innerHTML = "<option value=\"\">-- Seleccionar --</option>";
+        return;
+    }
+    
+    fetch("?page=branches&action=get_pos&branch_id=" + branchId)
+        .then(r => r.json())
+        .then(positions => {
+            posSelect.innerHTML = "<option value=\"\">-- Seleccionar --</option>";
+            positions.forEach(pos => {
+                const option = document.createElement("option");
+                option.value = pos.id;
+                option.textContent = (pos.terminal_name || "Caja " + pos.pos_code) + " (" + pos.pos_code + ")";
+                posSelect.appendChild(option);
+            });
+        });
+}
+</script>
+';
+?>

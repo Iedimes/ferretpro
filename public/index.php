@@ -528,7 +528,114 @@ switch ($page) {
         $productsData = db()->query("SELECT p.name, SUM(sd.quantity) as cantidad_vendida, SUM(sd.subtotal) as total_vendido FROM sale_details sd JOIN products p ON sd.product_id = p.id GROUP BY p.id ORDER BY total_vendido DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
         $lowStock = db()->query("SELECT * FROM products WHERE active = 1 AND stock <= min_stock ORDER BY stock")->fetchAll(PDO::FETCH_ASSOC);
         
-        view('reports/index', compact('salesData', 'productsData', 'lowStock', 'type', 'dateFrom', 'dateTo'));
+         view('reports/index', compact('salesData', 'productsData', 'lowStock', 'type', 'dateFrom', 'dateTo'));
+        break;
+        
+    case 'branches':
+        $action = $_GET['action'] ?? '';
+        
+        if ($action === 'get') {
+            $id = intval($_GET['id'] ?? 0);
+            $branch = db()->prepare("SELECT * FROM branches WHERE id = ?")->execute([$id])->fetch(PDO::FETCH_ASSOC);
+            header('Content-Type: application/json');
+            echo json_encode($branch ?: ['error' => 'Not found']);
+            exit;
+        }
+        
+        if ($action === 'get_pos') {
+            $branch_id = intval($_GET['branch_id'] ?? 0);
+            $pos = db()->query("SELECT * FROM pos_terminals WHERE branch_id = $branch_id AND is_active = 1 ORDER BY pos_code")->fetchAll(PDO::FETCH_ASSOC);
+            header('Content-Type: application/json');
+            echo json_encode($pos);
+            exit;
+        }
+        
+        if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_POST['branch_id'] ?? 0);
+            $code = $_POST['establishment_code'] ?? '';
+            $name = $_POST['name'] ?? '';
+            $city = $_POST['city'] ?? '';
+            $address = $_POST['address'] ?? '';
+            $phone = $_POST['phone'] ?? '';
+            $email = $_POST['email'] ?? '';
+            $active = isset($_POST['active']) ? 1 : 0;
+            
+            if (!$code || !$name) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Código y nombre son requeridos']);
+                exit;
+            }
+            
+            if ($id) {
+                $stmt = db()->prepare("UPDATE branches SET establishment_code = ?, name = ?, city = ?, address = ?, phone = ?, email = ?, active = ? WHERE id = ?");
+                $stmt->execute([$code, $name, $city, $address, $phone, $email, $active, $id]);
+            } else {
+                $stmt = db()->prepare("INSERT INTO branches (establishment_code, name, city, address, phone, email, active) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$code, $name, $city, $address, $phone, $email, $active]);
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Sucursal guardada']);
+            exit;
+        }
+        
+        if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_GET['id'] ?? 0);
+            db()->prepare("DELETE FROM branches WHERE id = ?")->execute([$id]);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Sucursal eliminada']);
+            exit;
+        }
+        
+        view('branches/index');
+        break;
+        
+    case 'pos_terminals':
+        $action = $_GET['action'] ?? '';
+        
+        if ($action === 'get') {
+            $id = intval($_GET['id'] ?? 0);
+            $pos = db()->prepare("SELECT * FROM pos_terminals WHERE id = ?")->execute([$id])->fetch(PDO::FETCH_ASSOC);
+            header('Content-Type: application/json');
+            echo json_encode($pos ?: ['error' => 'Not found']);
+            exit;
+        }
+        
+        if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_POST['pos_id'] ?? 0);
+            $branch_id = intval($_POST['branch_id'] ?? 0);
+            $pos_code = $_POST['pos_code'] ?? '';
+            $terminal_name = $_POST['terminal_name'] ?? '';
+            $is_active = isset($_POST['is_active']) ? 1 : 0;
+            
+            if (!$branch_id || !$pos_code) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Sucursal y código son requeridos']);
+                exit;
+            }
+            
+            if ($id) {
+                $stmt = db()->prepare("UPDATE pos_terminals SET branch_id = ?, pos_code = ?, terminal_name = ?, is_active = ? WHERE id = ?");
+                $stmt->execute([$branch_id, $pos_code, $terminal_name, $is_active, $id]);
+            } else {
+                $stmt = db()->prepare("INSERT INTO pos_terminals (branch_id, pos_code, terminal_name, is_active) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$branch_id, $pos_code, $terminal_name, $is_active]);
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Caja guardada']);
+            exit;
+        }
+        
+        if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = intval($_GET['id'] ?? 0);
+            db()->prepare("DELETE FROM pos_terminals WHERE id = ?")->execute([$id]);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Caja eliminada']);
+            exit;
+        }
+        
+        view('pos_terminals/index');
         break;
         
     case 'settings':

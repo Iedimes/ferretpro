@@ -161,6 +161,29 @@ class Database extends PDO {
                 value TEXT
             );
             
+            CREATE TABLE IF NOT EXISTS branches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                establishment_code TEXT NOT NULL UNIQUE,
+                city TEXT,
+                address TEXT,
+                phone TEXT,
+                email TEXT,
+                active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE TABLE IF NOT EXISTS pos_terminals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                branch_id INTEGER NOT NULL,
+                pos_code TEXT NOT NULL,
+                terminal_name TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (branch_id) REFERENCES branches(id),
+                UNIQUE(branch_id, pos_code)
+            );
+            
             CREATE TABLE IF NOT EXISTS password_resets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -280,6 +303,8 @@ class Database extends PDO {
             CREATE TABLE IF NOT EXISTS cash_register (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
+                branch_id INTEGER,
+                pos_terminal_id INTEGER,
                 opening_amount REAL NOT NULL,
                 closing_amount REAL,
                 expected_amount REAL,
@@ -289,7 +314,9 @@ class Database extends PDO {
                 closing_notes TEXT,
                 opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 closed_at DATETIME,
-                FOREIGN KEY (user_id) REFERENCES users(id)
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (branch_id) REFERENCES branches(id),
+                FOREIGN KEY (pos_terminal_id) REFERENCES pos_terminals(id)
             );
             
             CREATE TABLE IF NOT EXISTS cash_movements (
@@ -459,7 +486,7 @@ class Database extends PDO {
                 ('PROT-001', 'Guantes', 'Guantes de trabajo', 7, 1, 'par', 100, 180, 50, 10),
                 ('PROT-002', 'Antiparras', 'Antiparras de protección', 7, 1, 'unidad', 80, 140, 30, 5)");
             
-            $this->exec("INSERT INTO settings (key, value) VALUES 
+             $this->exec("INSERT INTO settings (key, value) VALUES 
                 ('company_name', 'Ferretería FerrePro'),
                 ('company_address', ''),
                 ('company_phone', ''),
@@ -469,7 +496,17 @@ class Database extends PDO {
                 ('invoice_next', '1'),
                 ('iva_percentage', '21'),
                 ('default_discount', '0'),
-                ('low_stock_alert', '5')");
-        }
-    }
-}
+                ('low_stock_alert', '5'),
+                ('default_branch_id', '1'),
+                ('default_pos_terminal_id', '1')");
+            
+            // Insert default branch and POS terminals
+            $this->exec("INSERT INTO branches (name, establishment_code, city, address, active) VALUES 
+                ('Casa Matriz', '001', 'Asunción', '', 1)");
+            
+            $this->exec("INSERT INTO pos_terminals (branch_id, pos_code, terminal_name, is_active) VALUES 
+                (1, '001', 'Caja 1', 1),
+                (1, '002', 'Caja 2', 1)");
+         }
+     }
+ }
