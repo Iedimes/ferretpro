@@ -496,4 +496,119 @@ if ($type === 'receivables') {
     </div>';
 }
 
+if ($type === 'clients') {
+    $clientSearch = $_GET['search'] ?? '';
+    
+    $whereClause = "active = 1";
+    $params = [];
+    
+    if ($clientSearch) {
+        $whereClause .= " AND (name LIKE ? OR document LIKE ? OR email LIKE ?)";
+        $params = ["%$clientSearch%", "%$clientSearch%", "%$clientSearch%"];
+    }
+    
+    $clientsStmt = db()->prepare("
+        SELECT c.*, 
+               COUNT(DISTINCT ar.id) as accounts_count,
+               SUM(CASE WHEN ar.status = 'pendiente' THEN ar.amount - ar.paid_amount ELSE 0 END) as total_pending
+        FROM clients c
+        LEFT JOIN accounts_receivable ar ON c.id = ar.client_id
+        WHERE $whereClause
+        GROUP BY c.id
+        ORDER BY c.name ASC
+    ");
+    $clientsStmt->execute($params);
+    $clients = $clientsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $totalClients = count($clients);
+    $totalCredit = array_sum(array_map(fn($c) => $c['credit_limit'], $clients));
+    $totalBalance = array_sum(array_map(fn($c) => $c['balance'], $clients));
+    $totalPending = array_sum(array_map(fn($c) => $c['total_pending'] ?? 0, $clients));
+    
+    $content .= '
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card primary">
+                <div class="card-body">
+                    <h6 class="text-muted">Total de Clientes</h6>
+                    <h3>' . $totalClients . '</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <h6 class="text-muted">Límite de Crédito Total</h6>
+                    <h3>' . Format::money($totalCredit) . '</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card info">
+                <div class="card-body">
+                    <h6 class="text-muted">Saldo Utilizado</h6>
+                    <h3>' . Format::money($totalBalance) . '</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <h6 class="text-muted">Cuentas Pendientes</h6>
+                    <h3>' . Format::money($totalPending) . '</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-people"></i> Listado de Clientes</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Documento</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Categoría</th>
+                        <th>Límite Crédito</th>
+                        <th>Saldo</th>
+                        <th>Cuentas</th>
+                        <th>Pendiente</th>
+                    </tr>
+                </thead>
+                <tbody>';
+    
+    foreach ($clients as $c) {
+        $available = $c['credit_limit'] - $c['balance'];
+        $balanceClass = $c['balance'] >= $c['credit_limit'] ? 'text-danger fw-bold' : '';
+        $categoryBadge = match($c['category']) {
+            'mayorista' => 'bg-primary',
+            'minorista' => 'bg-info',
+            'distribuidor' => 'bg-success',
+            default => 'bg-secondary'
+        };
+        
+        $content .= '<tr>
+            <td><strong>' . htmlspecialchars($c['name']) . '</strong></td>
+            <td>' . htmlspecialchars($c['document'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($c['phone'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($c['email'] ?? '-') . '</td>
+            <td><span class="badge ' . $categoryBadge . '">' . ucfirst($c['category']) . '</span></td>
+            <td>' . Format::money($c['credit_limit']) . '</td>
+            <td class="' . $balanceClass . '">' . Format::money($c['balance']) . '</td>
+            <td><span class="badge bg-secondary">' . ($c['accounts_count'] ?? 0) . '</span></td>
+            <td>' . Format::money($c['total_pending'] ?? 0) . '</td>
+        </tr>';
+    }
+    
+    $content .= '</tbody>
+            </table>
+        </div>
+    </div>';
+}
+
 ?>
