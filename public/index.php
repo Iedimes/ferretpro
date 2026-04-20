@@ -55,6 +55,23 @@ function view($file, $data = []) {
     exit;
 }
 
+function config($key, $default = null) {
+    $stmt = db()->prepare("SELECT value FROM settings WHERE key = ?");
+    $stmt->execute([$key]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ? $result['value'] : $default;
+}
+
+function getDefaultBranchAndPOS() {
+    $defaultBranchId = intval(config('default_branch_id', 1));
+    $defaultPosTerminalId = intval(config('default_pos_terminal_id', 1));
+    
+    return [
+        'branch_id' => $defaultBranchId,
+        'pos_terminal_id' => $defaultPosTerminalId
+    ];
+}
+
 $page = $_GET['page'] ?? 'home';
 $action = $_GET['action'] ?? 'list';
 
