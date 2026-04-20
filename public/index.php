@@ -337,6 +337,54 @@ switch ($page) {
             });
         }
         
+        // Handle receivable payment
+        if ($action === 'pay' && isset($_POST['account_id']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $ar_id = intval($_POST['account_id']);
+            $ar = db()->prepare("SELECT * FROM accounts_receivable WHERE id = ?");
+            $ar->execute([$ar_id]);
+            $ar = $ar->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$ar || $ar['status'] !== 'pendiente') {
+                Flash::error('Esta cuenta ya está pagada o no existe');
+                header('Location: ?page=receivable');
+                exit;
+            }
+            
+            $amount = floatval($_POST['amount'] ?? 0);
+            if ($amount <= 0 || $amount > $ar['amount'] - $ar['paid_amount']) {
+                Flash::error('Monto inválido');
+                header('Location: ?page=receivable');
+                exit;
+            }
+            
+            $paymentMethod = $_POST['payment_method'] ?? 'efectivo';
+            $reference = $_POST['reference'] ?? '';
+            $notes = $_POST['notes'] ?? '';
+            
+            $notesFull = trim('Ref: ' . $reference . ' ' . $notes);
+            $newPaidAmount = $ar['paid_amount'] + $amount;
+            $newStatus = ($newPaidAmount >= $ar['amount']) ? 'pagado' : 'pendiente';
+            
+            // Update receivable account
+            $stmt = db()->prepare("UPDATE accounts_receivable SET paid_amount = ?, status = ?, notes = ? WHERE id = ?");
+            $stmt->execute([$newPaidAmount, $newStatus, $notesFull, $ar_id]);
+            
+            // Update client balance (reduce balance by payment amount)
+            $stmtClient = db()->prepare("UPDATE clients SET balance = balance - ? WHERE id = ?");
+            $stmtClient->execute([$amount, $ar['client_id']]);
+            
+            // Record cash movement (money in)
+            $cashRegister = db()->query("SELECT id FROM cash_register WHERE status = 'open' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            if ($cashRegister) {
+                $stmtCash = db()->prepare("INSERT INTO cash_movements (cash_register_id, user_id, type, amount, description, payment_method, referencia) VALUES (?, ?, 'in', ?, ?, ?, ?)");
+                $stmtCash->execute([$cashRegister['id'], auth(), $amount, 'Cobro CxC #' . $ar_id, $paymentMethod, $reference]);
+            }
+            
+            Flash::success('Pago registrado correctamente');
+            header('Location: ?page=receivable');
+            exit;
+        }
+        
         view('receivable/index', compact('accounts'));
         break;
         
