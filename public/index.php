@@ -310,7 +310,7 @@ switch ($page) {
         break;
         
     case 'receivable':
-        $accounts = db()->query("SELECT ar.*, c.name as client_name FROM accounts_receivable ar JOIN clients c ON ar.client_id = c.id WHERE ar.status != 'cancelada' ORDER BY ar.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+         $accounts = db()->query("SELECT ar.*, c.name as client_name FROM accounts_receivable ar JOIN clients c ON ar.client_id = c.id WHERE ar.status = 'pendiente' ORDER BY ar.id DESC")->fetchAll(PDO::FETCH_ASSOC);
         
         $filter = $_GET['filter'] ?? null;
         $client_id = $_GET['client'] ?? null;
@@ -368,6 +368,12 @@ switch ($page) {
             // Update receivable account
             $stmt = db()->prepare("UPDATE accounts_receivable SET paid_amount = ?, status = ?, notes = ? WHERE id = ?");
             $stmt->execute([$newPaidAmount, $newStatus, $notesFull, $ar_id]);
+            
+            // If receivable is fully paid, update sales status to 'pagada'
+            if ($newStatus === 'pagado' && $ar['sale_id']) {
+                $stmtSale = db()->prepare("UPDATE sales SET status = 'pagada' WHERE id = ?");
+                $stmtSale->execute([$ar['sale_id']]);
+            }
             
             // Update client balance (reduce balance by payment amount)
             $stmtClient = db()->prepare("UPDATE clients SET balance = balance - ? WHERE id = ?");
