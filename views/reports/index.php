@@ -99,7 +99,10 @@ function clearFilters() {
     loadReport();
 }
 
-document.getElementById("reportType").addEventListener("change", function() { updateFields(); loadReport(); });
+document.getElementById("reportType").addEventListener("change", function() { 
+    updateFields(); 
+    clearFilters(); 
+});
 document.getElementById("searchProduct").addEventListener("keypress", function(e) {
     if (e.key === "Enter") loadReport();
 });
